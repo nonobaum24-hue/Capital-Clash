@@ -1,0 +1,185 @@
+import os
+import pygame
+
+# Bild-Cache und Helfer zum (einmaligen) Laden + Skalieren von Bildern (KI)
+_IMAGE_CACHE = {}
+def load_image(path, scale=0.25):
+	# key nach Pfad + Scale, damit verschiedene Skalierungen separat gecached werden
+	key = (os.path.abspath(path), float(scale))
+	if key in _IMAGE_CACHE:
+		return _IMAGE_CACHE[key]
+	img = pygame.image.load(path).convert_alpha()
+	img = pygame.transform.scale(img,
+		(int(img.get_width() * scale),
+		 int(img.get_height() * scale)))
+	_IMAGE_CACHE[key] = img
+	return img
+
+class marx:
+	def __init__(self, x, y, idle_path, run_path, scale=0.25):
+		self.x = x
+		self.y = y
+		self.alive = True
+		self.scale = scale
+
+		# Lade beide Skins direkt
+		self.stand_bild = load_image(idle_path, scale=self.scale)
+		self.lauf_bild = load_image(run_path, scale=self.scale)
+
+		# Starte mit Idle
+		self.image = self.stand_bild
+		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+
+		# Animation State
+		self.framecount_skin = 0
+		self.is_first_skin = True
+		self.prev_is_moving = False
+
+	def dead(self):
+		self.alive = False
+
+	def move(self, dx, dy):
+		from game import height, width
+		if self.x + dx > 0 and self.x + dx < width - self.rect.width:
+			self.x += dx
+		if self.y + dy > 0 and self.y + dy < height - self.rect.height:
+			self.y += dy
+		self.rect.topleft = (self.x, self.y)
+
+	def draw(self, screen):
+		if self.alive:
+			screen.blit(self.image, (self.x, self.y))
+
+	def get_rect(self):
+		return self.rect
+
+	def tick_animation(self, is_moving):
+		"""Pro Frame aufrufen. Verwaltet Animation intern basierend auf is_moving."""
+		# Detect Start/Stop
+		if is_moving and not self.prev_is_moving:
+			# Bewegung gestartet: sofort Run-Skin zeigen
+			self.image = self.lauf_bild
+			self.is_first_skin = False
+			self.framecount_skin = 0
+			self.rect = self.image.get_rect(topleft=(self.x, self.y))
+		elif is_moving:
+			# Laufanimation
+			self.framecount_skin += 1
+			if self.framecount_skin >= 15:
+				# toggle zwischen Idle und Run-Surface
+				if self.is_first_skin == False:
+					self.image = self.stand_bild
+					self.is_first_skin = True
+				else:
+					self.image = self.lauf_bild
+					self.is_first_skin = False
+				self.rect = self.image.get_rect(topleft=(self.x, self.y))
+				self.framecount_skin = 0
+		else:
+			# Nicht bewegend: zurück zu Idle
+			self.image = self.stand_bild
+			self.framecount_skin = 0
+			self.is_first_skin = True
+
+		self.prev_is_moving = is_moving
+
+	def update(self):
+		position = (self.x, self.y)
+		return self.alive, position
+
+	def input_monitoring(self, keys):
+		if keys[pygame.K_LEFT]:
+			self.move(-5, 0)
+		if keys[pygame.K_RIGHT]:
+			self.move(5, 0)
+		if keys[pygame.K_UP]:
+			self.move(0, -5)
+		if keys[pygame.K_DOWN]:
+			self.move(0, 5)
+
+class opponent:
+	def __init__(self, health_points):
+		self.alive = True
+		self.isfirst_skin = False
+		self.health_points = health_points
+		self.is_moving = True
+
+	def skinchange(self, new_image):
+		if isinstance(new_image, str):
+			self.image = load_image(new_image, scale=0.25)
+		elif isinstance(new_image, pygame.Surface):
+			self.image = new_image
+		else:
+			raise TypeError("skinchange erwartet Pfad (str) oder pygame.Surface")
+		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+
+	def getdamage(self, damage):
+		self.health_points -= damage
+		if self.health_points <= 0:
+			self.alive = False
+
+	def move(self, dx, dy):
+		self.x += dx
+		self.y += dy
+		self.rect.topleft = (self.x, self.y)
+		self.is_moving = True
+
+	def draw(self, screen):
+		if self.alive:
+			screen.blit(self.image, (self.x, self.y))
+
+	def follow(self, player, speed):
+		player_x, player_y = self.getplayerposition(player)
+		if player_x < self.x:
+			self.move(-speed, 0)
+		elif player_x > self.x:
+			self.move(speed, 0)
+		if player_y < self.y:
+			self.move(0, -speed)
+		elif player_y > self.y:
+			self.move(0, speed)
+		if self.x == player_x and self.y == player_y:
+			self.is_moving = False
+
+class normal_opp(opponent):
+	def __init__(self, x, y):
+		opponent.__init__(self, health_points=100)
+		self.x = x
+		self.y = y
+		self.tick = 0
+		self.script_dir = os.path.dirname(os.path.abspath(__file__))
+		self.normal_opp1_path = os.path.join(self.script_dir, "normal_opp1.png")
+		self.normal_opp2_path = os.path.join(self.script_dir, "normal_opp2.png")
+
+		self.normal_opp1_image = load_image(self.normal_opp1_path, scale=0.25)
+		self.normal_opp2_image = load_image(self.normal_opp2_path, scale=0.25)
+
+		self.image = self.normal_opp1_image
+		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+
+	def animation(self,):
+		self.tick += 1
+		if self.tick >= 15 and self.is_moving == True and self.alive == True:
+			if self.isfirst_skin == False:
+				self.skinchange(self.normal_opp1_image)
+				self.isfirst_skin = True
+			else:
+				self.skinchange(self.normal_opp2_image)
+				self.isfirst_skin = False
+			self.tick = 0
+		elif self.is_moving == False and self.alive == True:
+			self.skinchange(self.normal_opp1_image)
+			self.isfirst_skin = True
+			self.tick = 0
+
+	def getplayerposition(self, player):
+		player_x = player.x
+		player_y = player.y
+		return player_x, player_y
+
+	def update(self):
+		position = (self.x, self.y)
+		return self.alive, position
+	
+	def followplayer(self, player):
+		self.follow(player, speed=2.5)
