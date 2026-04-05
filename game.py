@@ -1,6 +1,6 @@
 import os
 import pygame
-from game_classes import *
+from game_classes import load_image, marx, normal_opp
 
 width = 1250
 height = 720
