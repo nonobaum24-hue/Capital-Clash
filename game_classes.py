@@ -110,6 +110,7 @@ class opponent:
 		self.isfirst_skin = False
 		self.health_points = health_points
 		self.is_moving = True
+		self.damagecooldown = 0
 
 	def skinchange(self, new_image):
 		if isinstance(new_image, str):
@@ -192,7 +193,12 @@ class normal_opp(opponent):
 		self.follow(player, speed=2.5)
 	
 	def damageplayer(self):
-		marx.get_damage(20)
+		if self.damagecooldown == 0:
+			marx.get_damage(20)
+		self.damagecooldown += 1
+		if self.damagecooldown >= 60:  # 1 Sekunde Cooldown
+			self.damagecooldown = 0
+
 	
 	def checkcollision(self, player):
 		if self.rect.colliderect(player.get_rect()):
