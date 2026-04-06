@@ -192,14 +192,14 @@ class normal_opp(opponent):
 	def followplayer(self, player):
 		self.follow(player, speed=2.5)
 	
-	def damageplayer(self):
-		if self.damagecooldown == 0:
-			marx.get_damage(20)
-		self.damagecooldown += 1
-		if self.damagecooldown >= 60:  # 1 Sekunde Cooldown
-			self.damagecooldown = 0
+	def damageplayer(self, player):
+		player.get_damage(20)
 
 	
 	def checkcollision(self, player):
-		if self.rect.colliderect(player.get_rect()):
-			self.damageplayer(player)
+		if self.damagecooldown == 0:
+			if self.rect.colliderect(player.get_rect()):
+				self.damageplayer(player)
+		self.damagecooldown += 1
+		if self.damagecooldown >= 60:  # 1 Sekunde Cooldown bei
+			self.damagecooldown = 0
