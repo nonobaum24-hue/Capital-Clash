@@ -65,10 +65,12 @@ while running:
 	if not alive:
 		print("Marx ist tot!")
 		running = False
+		exit()
 	
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			running = False
+			exit()
 	
 	pygame.display.flip()
 	clock.tick(60)
