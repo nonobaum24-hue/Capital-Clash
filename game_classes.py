@@ -1,5 +1,6 @@
 import os
 import pygame
+from game import *
 
 # Bild-Cache und Helfer zum (einmaligen) Laden + Skalieren von Bildern (KI)
 _IMAGE_CACHE = {}
@@ -16,11 +17,12 @@ def load_image(path, scale=0.25):
 	return img
 
 class marx:
-	def __init__(self, x, y, idle_path, run_path, scale=0.25):
+	def __init__(self, x, y, idle_path, run_path, scale=0.25, health_points=100):
 		self.x = x
 		self.y = y
 		self.alive = True
 		self.scale = scale
+		self.health_points = health_points
 
 		# Lade beide Skins direkt
 		self.stand_bild = load_image(idle_path, scale=self.scale)
@@ -96,6 +98,12 @@ class marx:
 			self.move(0, -5)
 		if keys[pygame.K_DOWN]:
 			self.move(0, 5)
+
+	def get_damage(self, damage):
+		if self.alive:
+			self.health_points -= damage
+			if self.health_points <= 0:
+				self.dead()
 
 class opponent:
 	def __init__(self, health_points):
@@ -183,3 +191,10 @@ class normal_opp(opponent):
 	
 	def followplayer(self, player):
 		self.follow(player, speed=2.5)
+	
+	def damageplayer(self):
+		marx.get_damage(20)
+	
+	def checkcollision(self):
+		if self.rect.colliderect(marx.get_rect()):
+			self.damageplayer()

@@ -1,6 +1,6 @@
 import os
 import pygame
-from game_classes import load_image, marx, normal_opp
+from game_classes import load_image, marx, opponent, normal_opp
 
 width = 1250
 height = 720
@@ -17,8 +17,8 @@ floor_path = os.path.join(script_dir, "floor.png")
 #KI Ende -------------------------------------------------------------------
 
 # Bilder vorher laden (verwende load_image aus game_classes)
-marx1_img = load_image(marx_path, scale=0.25)
-marx2_img = load_image(marx_path2, scale=0.25)
+marx1_img = load_image(marx_path, scale=0.20)
+marx2_img = load_image(marx_path2, scale=0.20)
 
 try:
     floor_img = pygame.image.load(floor_path).convert_alpha()
@@ -58,7 +58,9 @@ while running:
 
 	opp1.followplayer(marx_char)
 	opp1.animation()
+	opp1.checkcollision()
 	opp1.draw(screen)
+
 
 	if not alive:
 		print("Marx ist tot!")
