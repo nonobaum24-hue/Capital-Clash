@@ -1,6 +1,6 @@
 import os
 import pygame
-from game_classes import load_image, marx, opponent, normal_opp
+from game_classes import *
 
 width = 1250
 height = 720
@@ -58,7 +58,7 @@ while running:
 
 	opp1.followplayer(marx_char)
 	opp1.animation()
-	opp1.checkcollision()
+	opp1.checkcollision(marx_char)
 	opp1.draw(screen)
 
 

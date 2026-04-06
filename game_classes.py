@@ -1,6 +1,5 @@
 import os
 import pygame
-from game import *
 
 # Bild-Cache und Helfer zum (einmaligen) Laden + Skalieren von Bildern (KI)
 _IMAGE_CACHE = {}
@@ -195,6 +194,6 @@ class normal_opp(opponent):
 	def damageplayer(self):
 		marx.get_damage(20)
 	
-	def checkcollision(self):
-		if self.rect.colliderect(marx.get_rect()):
-			self.damageplayer()
+	def checkcollision(self, player):
+		if self.rect.colliderect(player.get_rect()):
+			self.damageplayer(player)
