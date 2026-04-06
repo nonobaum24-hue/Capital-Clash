@@ -194,6 +194,7 @@ class normal_opp(opponent):
 	
 	def damageplayer(self, player):
 		player.get_damage(20)
+		print(player.health_points)
 
 	
 	def checkcollision(self, player):
