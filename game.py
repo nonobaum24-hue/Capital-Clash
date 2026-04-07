@@ -53,8 +53,8 @@ while running:
 
 	# Update & Draw
 	alive, position = marx_char.update()
-	marx_char.draw(screen)
 	marx_area.draw(screen)
+	marx_char.draw(screen)
 
 	opp1.followplayer(marx_char)
 	opp1.animation()
