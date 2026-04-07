@@ -143,7 +143,7 @@ class damage_area:
 
 
 class health_bar:
-	def __init__(self, x, y, width, height, object):
+	def __init__(self, x, y, width, height, object, follow=False):
 		self.x = x
 		self.y = y
 		self.width = width
@@ -151,10 +151,16 @@ class health_bar:
 		self.max_health = object.gethealth()
 		self.health_points = self.max_health
 		self.object = object
-
+		self.follow = follow  # Wenn True: Bar folgt dem Objekt automatisch
 
 	def draw(self, screen):
 		self.health_points = self.object.gethealth()
+
+		# Position dynamisch aus dem Rect des Objekts berechnen
+		if self.follow:
+			self.x = self.object.rect.x
+			self.y = self.object.rect.y - 12  # 12px über dem Kopf
+
 		pygame.draw.rect(screen, (255, 0, 0), (self.x, self.y, self.width, self.height))
 		health_percentage = self.health_points / self.max_health
 		pygame.draw.rect(screen, (0, 255, 0), (self.x, self.y, self.width * health_percentage, self.height))
@@ -180,6 +186,9 @@ class opponent:
 		self.health_points -= damage
 		if self.health_points <= 0:
 			self.alive = False
+
+	def gethealth(self):
+		return self.health_points
 
 	def move(self, dx, dy):
 		self.x += dx

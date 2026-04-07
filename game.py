@@ -40,6 +40,9 @@ opp1 = normal_opp(0, 0)
 opp2 = normal_opp(100, 300)
 opponents = [opp1, opp2]
 
+# Für jeden Gegner eine Healthbar erstellen (follow=True hält sie über dem Kopf)
+opp_bars = [health_bar(0, 0, 60, 7, opp, follow=True) for opp in opponents]
+
 while running:
 	screen.fill((0,0,0))
 	
@@ -64,11 +67,17 @@ while running:
 		opp.checkcollision(marx_char)
 		opp.draw(screen)
 
-	# Tote Gegner aus der Liste entfernen
-	opponents = [opp for opp in opponents if opp.update()]
+	# Healthbars der lebenden Gegner zeichnen
+	for bar in opp_bars:
+		if bar.object.alive:
+			bar.draw(screen)
+
+	# Tote Gegner und ihre Bars aus den Listen entfernen
+	alive_opponents = [opp for opp in opponents if opp.update()]
+	opp_bars = [bar for bar in opp_bars if bar.object.alive]
+	opponents = alive_opponents
 	if not opponents:
 		print("Alle Gegner besiegt!")
-		exit()
 
 	marx_bar.draw(screen)
 
