@@ -169,7 +169,8 @@ class opponent:
 	def getdamage(self, damage):
 		self.health_points -= damage
 		if self.health_points <= 0:
-			self.__del__()
+			self.alive = False
+			del self
 
 	def move(self, dx, dy):
 		self.x += dx
