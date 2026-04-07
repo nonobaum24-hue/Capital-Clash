@@ -78,6 +78,7 @@ while running:
 	opponents = alive_opponents
 	if not opponents:
 		print("Alle Gegner besiegt!")
+		exit()
 
 	marx_bar.draw(screen)
 
