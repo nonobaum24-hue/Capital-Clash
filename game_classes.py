@@ -106,7 +106,21 @@ class marx:
 	
 	def gethealth(self):
 		return self.health_points
-	
+
+class damage_area:
+	def __init__(self, origin):
+		self.widthmulti = 1
+		self.damagemulti = 1
+		self.origin = origin
+
+	def getparentposition(self):
+		origin_x = self.origin.x
+		origin_y = self.origin.y
+		return origin_x, origin_y
+
+	def draw(self, screen):
+		pygame.draw.circle(screen, (92, 92, 92, 0.18), self.getparentposition(), 10 * self.widthmulti)
+		pass
 
 
 class health_bar:

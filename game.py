@@ -30,6 +30,7 @@ except Exception as e:
 # Marx mit beiden Skin-Pfaden initialisieren
 marx_char = marx(width // 2, height // 2, marx_path, marx_path2)
 marx_bar = health_bar(1250 - 220, 20, 200, 20, marx_char)
+marx_area = damage_area(marx_char)
 
 running = True
 
@@ -40,8 +41,7 @@ opp1 = normal_opp(0, 0)
 while running:
 	screen.fill((0,0,0))
 	
-	if floor_img:
-		screen.blit(floor_img, (0, 0))
+	screen.blit(floor_img, (0, 0))
 	
 	# Steuerung
 	keys = pygame.key.get_pressed()
@@ -49,13 +49,12 @@ while running:
 	
 	# Bewegung verwaltet marx intern
 	marx_char.input_monitoring(keys)
-
-	# Animation intern verwaltet, nur is_moving übergeben
 	marx_char.tick_animation(is_moving)
 
 	# Update & Draw
 	alive, position = marx_char.update()
 	marx_char.draw(screen)
+	marx_area.draw(screen)
 
 	opp1.followplayer(marx_char)
 	opp1.animation()
