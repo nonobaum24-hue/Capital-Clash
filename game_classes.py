@@ -184,20 +184,21 @@ class opponent:
 
 	def follow(self, player, speed):
 		player_x, player_y = self.getplayerposition(player)
-		if player_x < self.x:
-			self.move(-speed, 0)
-		elif player_x > self.x:
-			self.move(speed, 0)
-		if player_y < self.y:
-			self.move(0, -speed)
-		elif player_y > self.y:
-			self.move(0, speed)
-		if self.x == player_x and self.y == player_y:
-			self.is_moving = False
+		if self.alive:
+			if player_x < self.x:
+				self.move(-speed, 0)
+			elif player_x > self.x:
+				self.move(speed, 0)
+			if player_y < self.y:
+				self.move(0, -speed)
+			elif player_y > self.y:
+				self.move(0, speed)
+			if self.x == player_x and self.y == player_y:
+				self.is_moving = False
 
 	def checkcollision(self, player):
 		if self.damagecooldown == 0:
-			if self.rect.colliderect(player.get_rect()):
+			if self.rect.colliderect(player.get_rect()) and self.alive:
 				self.damageplayer(player)
 		self.damagecooldown += 1
 		if self.damagecooldown >= 60:  # 1 Sekunde Cooldown bei
