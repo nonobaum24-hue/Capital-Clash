@@ -43,6 +43,7 @@ opponents = [opp1, opp2]
 # Für jeden Gegner eine Healthbar erstellen (follow=True hält sie über dem Kopf)
 opp_bars = [health_bar(-40, 0, 60, 7, opp, follow=True) for opp in opponents]
 
+
 while running:
 	screen.fill((0,0,0))
 	
