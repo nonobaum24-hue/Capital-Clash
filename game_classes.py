@@ -171,6 +171,14 @@ class opponent:
 		if self.x == player_x and self.y == player_y:
 			self.is_moving = False
 
+	def checkcollision(self, player):
+		if self.damagecooldown == 0:
+			if self.rect.colliderect(player.get_rect()):
+				self.damageplayer(player)
+		self.damagecooldown += 1
+		if self.damagecooldown >= 60:  # 1 Sekunde Cooldown bei
+			self.damagecooldown = 0
+
 class normal_opp(opponent):
 	def __init__(self, x, y):
 		opponent.__init__(self, health_points=100)
@@ -216,13 +224,3 @@ class normal_opp(opponent):
 	
 	def damageplayer(self, player):
 		player.get_damage(20)
-		print(player.health_points)
-
-	
-	def checkcollision(self, player):
-		if self.damagecooldown == 0:
-			if self.rect.colliderect(player.get_rect()):
-				self.damageplayer(player)
-		self.damagecooldown += 1
-		if self.damagecooldown >= 60:  # 1 Sekunde Cooldown bei
-			self.damagecooldown = 0
