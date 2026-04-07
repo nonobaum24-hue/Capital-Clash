@@ -36,6 +36,9 @@ class marx:
 		self.is_first_skin = True
 		self.prev_is_moving = False
 
+		# Attack Cooldown
+		self.attack_cooldown = 0
+
 	def dead(self):
 		self.alive = False
 
@@ -88,7 +91,7 @@ class marx:
 		position = (self.x, self.y)
 		return self.alive, position
 
-	def input_monitoring(self, keys, area, opp):
+	def input_monitoring(self, keys, area, opponents):
 		if keys[pygame.K_LEFT]:
 			self.move(-5, 0)
 		if keys[pygame.K_RIGHT]:
@@ -97,9 +100,16 @@ class marx:
 			self.move(0, -5)
 		if keys[pygame.K_DOWN]:
 			self.move(0, 5)
-		if keys[pygame.K_SPACE]:
-			if opp.rect.colliderect(area.getrect()):
-				opp.getdamage(50)
+
+		# Attack Cooldown runterzählen
+		if self.attack_cooldown > 0:
+			self.attack_cooldown -= 1
+
+		if keys[pygame.K_SPACE] and self.attack_cooldown == 0:
+			for opp in opponents:
+				if opp.rect.colliderect(area.getrect()):
+					opp.getdamage(50)
+			self.attack_cooldown = 30  # 0.5 Sekunden Cooldown bei 60 FPS
 
 
 	def get_damage(self, damage):

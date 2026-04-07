@@ -37,6 +37,8 @@ running = True
 clock = pygame.time.Clock()
 
 opp1 = normal_opp(0, 0)
+opp2 = normal_opp(100, 300)
+opponents = [opp1, opp2]
 
 while running:
 	screen.fill((0,0,0))
@@ -48,7 +50,7 @@ while running:
 	is_moving = keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_UP] or keys[pygame.K_DOWN]
 	
 	# Bewegung verwaltet marx intern
-	marx_char.input_monitoring(keys, marx_area, opp1)
+	marx_char.input_monitoring(keys, marx_area, opponents)
 	marx_char.tick_animation(is_moving)
 
 	# Update & Draw
@@ -56,10 +58,16 @@ while running:
 	marx_area.draw(screen)
 	marx_char.draw(screen)
 
-	opp1.followplayer(marx_char)
-	opp1.animation()
-	opp1.checkcollision(marx_char)
-	opp1.draw(screen)
+	for opp in opponents:
+		opp.followplayer(marx_char)
+		opp.animation()
+		opp.checkcollision(marx_char)
+		opp.draw(screen)
+
+	# Tote Gegner aus der Liste entfernen
+	opponents = [opp for opp in opponents if opp.update()]
+	if not opponents:
+		print("Alle Gegner besiegt!")
 
 	marx_bar.draw(screen)
 
@@ -68,10 +76,6 @@ while running:
 		running = False
 		exit()
 
-	if opp1.update() == False:
-		print("Gegner ist tot!")
-		del opp1
-	
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			running = False
