@@ -16,12 +16,15 @@ def load_image(path, scale=0.25):
 	return img
 
 class marx:
-	def __init__(self, x, y, idle_path, run_path, scale=0.25, health_points=100):
+	def __init__(self, x, y, idle_path, run_path, scale=0.25, health_points=100, screen_w=1250, screen_h=720):
 		self.x = x
 		self.y = y
 		self.alive = True
 		self.scale = scale
 		self.health_points = health_points
+
+		self.screen_w = screen_w
+		self.screen_h = screen_h
 
 		# Lade beide Skins direkt
 		self.stand_bild = load_image(idle_path, scale=self.scale)
@@ -43,10 +46,9 @@ class marx:
 		self.alive = False
 
 	def move(self, dx, dy):
-		from game import height, width
-		if self.x + dx > 0 and self.x + dx < width - self.rect.width:
+		if self.x + dx > 0 and self.x + dx < self.screen_w - self.rect.width:
 			self.x += dx
-		if self.y + dy > 0 and self.y + dy < height - self.rect.height:
+		if self.y + dy > 0 and self.y + dy < self.screen_h - self.rect.height:
 			self.y += dy
 		self.rect.topleft = (self.x, self.y)
 
