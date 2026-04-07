@@ -68,6 +68,7 @@ while running:
 	opponents = [opp for opp in opponents if opp.update()]
 	if not opponents:
 		print("Alle Gegner besiegt!")
+		exit()
 
 	marx_bar.draw(screen)
 
