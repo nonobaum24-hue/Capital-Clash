@@ -133,7 +133,7 @@ class damage_area:
 		return position
 
 	def draw(self, screen):
-		pygame.draw.circle(screen, (0,0,0,500), self.getparentposition(), self.normal_width * self.widthmulti, 5)
+		pygame.draw.circle(screen, (0,0,0,125), self.getparentposition(), self.normal_width * self.widthmulti, 5)
 		pass
 
 	def getrect(self):
