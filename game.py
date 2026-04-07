@@ -59,7 +59,7 @@ while running:
 
 	# Update & Draw
 	alive, position = marx_char.update()
-	marx_area.draw(screen)
+	marx_area.drawrect(screen)
 	marx_char.draw(screen)
 
 	for opp in opponents:

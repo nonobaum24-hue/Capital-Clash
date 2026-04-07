@@ -127,21 +127,16 @@ class damage_area:
 		self.damagemulti = 1
 		self.origin = origin
 		self.normal_width = 150
-
+	
 	def getparentposition(self):
 		position = self.origin.get_rect().center
 		return position
-
-	'''
-	def draw(self, screen):
-		pygame.draw.circle(screen, (255,255,255,125), self.getparentposition(), self.normal_width * self.widthmulti)
-		pass
-	'''
-
-	def draw (screen):
+	
+	def drawrect (screen):
 		color = (255, 255, 255, 125)  # Weiß mit Transparenz
 		radius = 200
-		target_rect = pygame.Rect(self.getparentposition(), (0, 0)).inflate((radius * 2, radius * 2))
+		position = self.getparentposition()
+		target_rect = pygame.Rect(position, (0, 0)).inflate((radius * 2, radius * 2))
 		shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
 		pygame.draw.circle(shape_surf, color, (radius, radius), radius)
 		screen.blit(shape_surf, target_rect)
