@@ -88,7 +88,7 @@ class marx:
 		position = (self.x, self.y)
 		return self.alive, position
 
-	def input_monitoring(self, keys):
+	def input_monitoring(self, keys, area, opp):
 		if keys[pygame.K_LEFT]:
 			self.move(-5, 0)
 		if keys[pygame.K_RIGHT]:
@@ -97,6 +97,10 @@ class marx:
 			self.move(0, -5)
 		if keys[pygame.K_DOWN]:
 			self.move(0, 5)
+		if keys[pygame.K_SPACE]:
+			if opp.rect.colliderect(area.getrect()):
+				opp.getdamage(50)
+
 
 	def get_damage(self, damage):
 		if self.alive:
@@ -112,14 +116,20 @@ class damage_area:
 		self.widthmulti = 1
 		self.damagemulti = 1
 		self.origin = origin
+		self.normal_width = 100
 
 	def getparentposition(self):
 		position = self.origin.get_rect().center
 		return position
 
 	def draw(self, screen):
-		pygame.draw.circle(screen, (0,0,0,0), self.getparentposition(), 100 * self.widthmulti, 5)
+		pygame.draw.circle(screen, (0,0,0,0), self.getparentposition(), self.normal_width * self.widthmulti, 5)
 		pass
+
+	def getrect(self):
+		pos = self.getparentposition()
+		radius = self.normal_width * self.widthmulti
+		return pygame.Rect(pos[0] - radius, pos[1] - radius, radius * 2, radius * 2)
 
 
 class health_bar:
@@ -159,7 +169,7 @@ class opponent:
 	def getdamage(self, damage):
 		self.health_points -= damage
 		if self.health_points <= 0:
-			self.alive = False
+			self.__del__()
 
 	def move(self, dx, dy):
 		self.x += dx
