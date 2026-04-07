@@ -103,6 +103,28 @@ class marx:
 			self.health_points -= damage
 			if self.health_points <= 0:
 				self.dead()
+	
+	def gethealth(self):
+		return self.health_points
+	
+
+
+class health_bar:
+	def __init__(self, x, y, width, height, object):
+		self.x = x
+		self.y = y
+		self.width = width
+		self.height = height
+		self.max_health = object.gethealth()
+		self.health_points = self.max_health
+		self.object = object
+
+
+	def draw(self, screen):
+		self.health_points = self.object.gethealth()
+		pygame.draw.rect(screen, (255, 0, 0), (self.x, self.y, self.width, self.height))
+		health_percentage = self.health_points / self.max_health
+		pygame.draw.rect(screen, (0, 255, 0), (self.x, self.y, self.width * health_percentage, self.height))
 
 class opponent:
 	def __init__(self, health_points):

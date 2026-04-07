@@ -29,6 +29,7 @@ except Exception as e:
 
 # Marx mit beiden Skin-Pfaden initialisieren
 marx_char = marx(width // 2, height // 2, marx_path, marx_path2)
+marx_bar = health_bar(1250 - 220, 20, 200, 20, marx_char)
 
 running = True
 
@@ -61,6 +62,7 @@ while running:
 	opp1.checkcollision(marx_char)
 	opp1.draw(screen)
 
+	marx_bar.draw(screen)
 
 	if not alive:
 		print("Marx ist tot!")
