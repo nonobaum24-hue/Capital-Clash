@@ -48,7 +48,7 @@ while running:
 	is_moving = keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_UP] or keys[pygame.K_DOWN]
 	
 	# Bewegung verwaltet marx intern
-	marx_char.input_monitoring(keys)
+	marx_char.input_monitoring(keys, marx_area, opp1)
 	marx_char.tick_animation(is_moving)
 
 	# Update & Draw
