@@ -126,7 +126,7 @@ class damage_area:
 		self.widthmulti = 1
 		self.damagemulti = 1
 		self.origin = origin
-		self.normal_width = 100
+		self.normal_width = 150
 
 	def getparentposition(self):
 		position = self.origin.get_rect().center
