@@ -114,12 +114,11 @@ class damage_area:
 		self.origin = origin
 
 	def getparentposition(self):
-		origin_x = self.origin.x
-		origin_y = self.origin.y
-		return origin_x, origin_y
+		position = self.origin.get_rect().center
+		return position
 
 	def draw(self, screen):
-		pygame.draw.circle(screen, (92, 92, 92, 0.18), self.getparentposition(), 10 * self.widthmulti)
+		pygame.draw.circle(screen, (92, 92, 92, 0.18), self.getparentposition(), 100 * self.widthmulti)
 		pass
 
 
