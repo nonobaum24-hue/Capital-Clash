@@ -67,6 +67,10 @@ while running:
 		print("Marx ist tot!")
 		running = False
 		exit()
+
+	if opp1.update() == False:
+		print("Gegner ist tot!")
+		del opp1
 	
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:

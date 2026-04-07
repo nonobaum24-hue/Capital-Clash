@@ -170,7 +170,6 @@ class opponent:
 		self.health_points -= damage
 		if self.health_points <= 0:
 			self.alive = False
-			del self
 
 	def move(self, dx, dy):
 		self.x += dx
@@ -203,6 +202,9 @@ class opponent:
 		self.damagecooldown += 1
 		if self.damagecooldown >= 60:  # 1 Sekunde Cooldown bei
 			self.damagecooldown = 0
+
+	def update(self):
+		return self.alive
 
 class normal_opp(opponent):
 	def __init__(self, x, y):
@@ -241,8 +243,7 @@ class normal_opp(opponent):
 		return player_x, player_y
 
 	def update(self):
-		position = (self.x, self.y)
-		return self.alive, position
+		return self.alive
 	
 	def followplayer(self, player):
 		self.follow(player, speed=2.5)
