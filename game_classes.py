@@ -158,7 +158,7 @@ class health_bar:
 
 		# Position dynamisch aus dem Rect des Objekts berechnen
 		if self.follow:
-			self.x = self.object.rect.x - 20
+			self.x = self.object.rect.x - 10
 			self.y = self.object.rect.y - 12  # 12px über dem Kopf
 
 		pygame.draw.rect(screen, (255, 0, 0), (self.x, self.y, self.width, self.height))
