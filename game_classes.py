@@ -1,5 +1,6 @@
 import os
 import pygame
+from random import randint
 
 # Bild-Cache und Helfer zum (einmaligen) Laden + Skalieren von Bildern (KI)
 _IMAGE_CACHE = {}
@@ -108,10 +109,16 @@ class marx:
 		if self.attack_cooldown > 0:
 			self.attack_cooldown -= 1
 
+		#Auswahl Liste bei mehrfachem Treffer
+		self.opp_list = []
+
 		if keys[pygame.K_SPACE] and self.attack_cooldown == 0:
 			for opp in opponents:
 				if opp.rect.colliderect(area.getrect()):
-					opp.getdamage(self.damage)
+					self.opp_list.append(opp)
+			if self.opp_list:
+				self.chosen_opp = self.opp_list[randint(0, len(self.opp_list) - 1)]
+				self.chosen_opp.getdamage(self.damage)
 			self.attack_cooldown = 30  # 0.5 Sekunden Cooldown bei 60 FPS
 
 
