@@ -108,6 +108,9 @@ class marx:
 		# Attack Cooldown runterzählen
 		if self.attack_cooldown > 0:
 			self.attack_cooldown -= 1
+			area.turnred()
+		else:
+			area.turnwhite()
 
 		#Auswahl Liste bei mehrfachem Treffer
 		self.opp_list = []
@@ -143,17 +146,23 @@ class damage_area:
 		return position
 	
 	def drawrect(self, screen):
-		color = (255, 255, 255, 125)  # Weiß mit Transparenz
+		self.color = (255, 255, 255, 125)  # Weiß mit Transparenz
 		radius = 200
 		target_rect = pygame.Rect(self.getparentposition(), (0, 0)).inflate((radius * 2, radius * 2))
 		shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
-		pygame.draw.circle(shape_surf, color, (radius, radius), radius)
+		pygame.draw.circle(shape_surf, self.color, (radius, radius), radius)
 		screen.blit(shape_surf, target_rect)
 
 	def getrect(self):
 		pos = self.getparentposition()
 		radius = self.normal_width * self.widthmulti
 		return pygame.Rect(pos[0] - radius, pos[1] - radius, radius * 2, radius * 2)
+	
+	def turnred(self):
+		self.color = (255, 0, 0, 125)  # Rot mit Transparenz
+	
+	def turnwhite(self):
+		self.color = (255, 255, 255, 125)  # Weiß mit Transparenz
 
 
 class health_bar:
