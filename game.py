@@ -96,7 +96,6 @@ while running and roundtick > 0:
 	opponents = alive_opponents
 	if not opponents:
 		print("Alle Gegner besiegt!")
-		exit()
 
 	marx_bar.draw(screen)
 
