@@ -356,7 +356,7 @@ class normal_opp(opponent):
 	def update(self):
 		return self.alive
 	
-	def followplayer(self, player):
+	def follow(self, player):
 		self.followplayer(player)
 	
 	def damageplayer(self, player, damage_screen=None):
