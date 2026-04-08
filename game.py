@@ -46,19 +46,17 @@ opponents = []
 
 # Für jeden Gegner eine Healthbar erstellen (follow=True hält sie über dem Kopf)
 opp_bars = [health_bar(-40, 0, 60, 7, opp, follow=True) for opp in opponentbars]
-roundtick = 7200 # zwei Minuten Spielzeit bei 60 FPS
+roundtick = 3600 # 60 Sekunden bei 60 FPS
 
 
 while running and roundtick > 0:
 
 	# Gegner spawnen zu bestimmten Zeiten
-	if roundtick == 7200: # Gegner 1 spawnt nach 0 Sekunden
-		opponents = opponents + [opp1]
-	elif roundtick == 5400: # Gegner 2 spawnt nach 30 Sekunden
-		opponents = opponents + [opp2]
-	elif roundtick == 3600: # Gegner 3 spawnt nach 60 Sekunden
+	if roundtick == 3600: # Gegner 1 spawnt nach 0 Sekunden
+		opponents = opponents + [opp1+opp2]
+	elif roundtick == 1800: # Gegner 3 spawnt nach 60 Sekunden
 		opponents = opponents + [opp3]
-	elif roundtick == 1800: # Gegner 4 und 5 spawnen nach 90 Sekunden
+	elif roundtick == 1800 - 5*60: # Gegner 4 und 5 spawnen nach 65 Sekunden
 		opponents = opponents + [opp4, opp5]
 	
 	roundtick -= 1
