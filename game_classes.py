@@ -230,6 +230,7 @@ class opponent:
 		self.health_points = health_points
 		self.is_moving = True
 		self.damagecooldown = 0
+		self.tick = 0
 
 		self.offset_x = uniform(-20, 20)
 		self.offset_y = uniform(-20, 20)
@@ -304,6 +305,14 @@ class opponent:
 	def update(self):
 		return self.alive
 	
+	def getplayerposition(self, player):
+		player_x = player.x
+		player_y = player.y
+		return player_x, player_y
+	
+	def damageplayer(self, player, damage_screen=None):
+		player.get_damage(self.damage, damage_screen)
+	
 	def set_position_out_of_range_of_player(self, player):
 		self.exception_x_start, self.exception_x_end, self.exception_y_start, self.exception_y_end = player.get_exception_area()
 		while True:
@@ -316,48 +325,34 @@ class opponent:
 				break
 		self.rect.topleft = (self.x, self.y)
 
+	def animation(self):
+		self.tick += 1
+		if self.tick >= 15 and self.is_moving == True and self.alive == True:
+			if self.isfirst_skin == False:
+				self.skinchange(self.image1)
+				self.isfirst_skin = True
+			else:
+				self.skinchange(self.image2)
+				self.isfirst_skin = False
+			self.tick = 0
+		elif self.is_moving == False and self.alive == True:
+			self.skinchange(self.image1)
+			self.isfirst_skin = True
+			self.tick = 0
+
 class normal_opp(opponent):
 	def __init__(self, x, y):
 		opponent.__init__(self, health_points=150)
 		self.x = x
 		self.y = y
-		self.tick = 0
 		self.speed = 3 + uniform(-0.5, 0.5)
+		self.damage = 20
 
 		# Bilder laden
-		self.script_dir = os.path.dirname(os.path.abspath(__file__))
-		self.normal_opp1_path = os.path.join(self.script_dir, "normal_opp1.png")
-		self.normal_opp2_path = os.path.join(self.script_dir, "normal_opp2.png")
-		self.normal_opp1_image = load_image(self.normal_opp1_path, scale=0.25)
-		self.normal_opp2_image = load_image(self.normal_opp2_path, scale=0.25)
-		self.image = self.normal_opp1_image
+		script_dir = os.path.dirname(os.path.abspath(__file__))
+		normal_opp1_path = os.path.join(script_dir, "normal_opp1.png")
+		normal_opp2_path = os.path.join(script_dir, "normal_opp2.png")
+		self.image1 = load_image(normal_opp1_path, scale=0.25)
+		self.image2 = load_image(normal_opp2_path, scale=0.25)
+		self.image = self.image1
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
-
-	def animation(self):
-		self.tick += 1
-		if self.tick >= 15 and self.is_moving == True and self.alive == True:
-			if self.isfirst_skin == False:
-				self.skinchange(self.normal_opp1_image)
-				self.isfirst_skin = True
-			else:
-				self.skinchange(self.normal_opp2_image)
-				self.isfirst_skin = False
-			self.tick = 0
-		elif self.is_moving == False and self.alive == True:
-			self.skinchange(self.normal_opp1_image)
-			self.isfirst_skin = True
-			self.tick = 0
-
-	def getplayerposition(self, player):
-		player_x = player.x
-		player_y = player.y
-		return player_x, player_y
-
-	def update(self):
-		return self.alive
-	
-	def follow(self, player):
-		self.followplayer(player)
-	
-	def damageplayer(self, player, damage_screen=None):
-		player.get_damage(20, damage_screen)

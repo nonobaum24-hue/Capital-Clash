@@ -85,7 +85,7 @@ while running and roundtick > 0:
 	dmg_scr.draw(screen)
 
 	for opp in opponents:
-		opp.follow(marx_char)
+		opp.followplayer(marx_char)
 		opp.animation()
 		opp.checkcollision(marx_char, dmg_scr)
 		opp.draw(screen)
