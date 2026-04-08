@@ -1,7 +1,6 @@
 import os
 import pygame
 from game_classes import *
-from random import randint
 
 width = 1250
 height = 720
