@@ -44,7 +44,7 @@ opp4 = normal_opp(0, 0)
 opp5 = normal_opp(0, 0)
 super_opp1 = super_opp(0, 0)
 super_opp2 = super_opp(0, 0)
-opponentcache = [opp1, opp2, opp3, opp4, opp5]
+opponentcache = [opp1, opp2, opp3, opp4, opp5, super_opp1, super_opp2]
 opponents = []
 
 # Für jeden Gegner eine Healthbar erstellen (follow=True hält sie über dem Kopf)
