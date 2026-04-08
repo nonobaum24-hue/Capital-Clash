@@ -18,13 +18,16 @@ def load_image(path, scale=0.25):
 
 class marx:
 	def __init__(self, x, y, idle_path, run_path, scale=0.25, health_points=100, screen_w=1250, screen_h=720):
+		# Initialisiert den Spieler mit Position, Bildpfaden, Skalierung, Gesundheit und Bildschirmgröße
 		self.x = x
 		self.y = y
 		self.alive = True
 		self.scale = scale
 		self.health_points = health_points
 		self.damage = 30
+		self.exception_radius = 250
 
+		# Bildschirmgröße speichern für Bewegungsbegrenzung
 		self.screen_w = screen_w
 		self.screen_h = screen_h
 
@@ -47,7 +50,7 @@ class marx:
 	def dead(self):
 		self.alive = False
 
-	def move(self, dx, dy):
+	def move(self, dx, dy): # Bewegt den Spieler, prüft aber vorher, ob er sich noch im Bildschirm befindet
 		if self.x + dx > 0 and self.x + dx < self.screen_w - self.rect.width:
 			self.x += dx
 		if self.y + dy > 0 and self.y + dy < self.screen_h - self.rect.height:
@@ -62,7 +65,6 @@ class marx:
 		return self.rect
 
 	def tick_animation(self, is_moving):
-		"""Pro Frame aufrufen. Verwaltet Animation intern basierend auf is_moving."""
 		# Detect Start/Stop
 		if is_moving and not self.prev_is_moving:
 			# Bewegung gestartet: sofort Run-Skin zeigen
@@ -95,7 +97,7 @@ class marx:
 		position = (self.x, self.y)
 		return self.alive, position
 
-	def input_monitoring(self, keys, area, opponents):
+	def input_monitoring(self, keys, area, opponents): # Verarbeitet Bewegung und Angriffe basierend auf Tasteneingaben
 		if keys[pygame.K_LEFT]:
 			self.move(-5, 0)
 		if keys[pygame.K_RIGHT]:
@@ -116,9 +118,11 @@ class marx:
 		self.opp_list = []
 
 		if keys[pygame.K_SPACE] and self.attack_cooldown == 0:
+			# Alle Gegner durchgehen und prüfen, ob sie im Angriffsbereich sind
 			for opp in opponents:
 				if opp.rect.colliderect(area.getrect()):
 					self.opp_list.append(opp)
+			# Wenn Gegner in Reichweite, zufällig einen auswählen und Schaden zufügen
 			if self.opp_list:
 				self.chosen_opp = self.opp_list[randint(0, len(self.opp_list) - 1)]
 				self.chosen_opp.getdamage(self.damage)
@@ -129,14 +133,23 @@ class marx:
 		self.damage_screen = damage_screen
 		if self.alive:
 			self.health_points -= damage
+			#Bildschirm rot einfärben, wenn Schaden genommen wird
 			if self.damage_screen:
 				self.damage_screen.trigger()
-
+			# Überprüfen, ob Gesundheit auf 0 oder darunter gefallen ist
 			if self.health_points <= 0:
 				self.dead()
 	
 	def gethealth(self):
 		return self.health_points
+	
+	def get_exception_area(self): # Berechnet den Bereich um den Spieler, in dem Gegner nicht spawnen sollen
+		x, y = self.get_rect().center
+		exception_x_start = x - self.exception_radius
+		exception_x_end = x + self.exception_radius
+		exception_y_start = y - self.exception_radius
+		exception_y_end = y + self.exception_radius
+		return exception_x_start, exception_x_end, exception_y_start, exception_y_end
 
 class damage_area:
 	def __init__(self, origin):
@@ -269,6 +282,18 @@ class opponent:
 
 	def update(self):
 		return self.alive
+	
+	def set_position_out_of_range_of_player(self, player):
+		self.exception_x_start, self.exception_x_end, self.exception_y_start, self.exception_y_end = player.get_exception_area()
+		while True:
+			self.x = randint(0, 1250 - self.rect.width)
+			if self.x <self.exception_x_start and self.x > self.exception_x_end:
+				break
+		while True:
+			self.y = randint(0, 720 - self.rect.height)
+			if self.y < self.exception_y_start and self.y > self.exception_y_end:
+				break
+		self.rect.topleft = (self.x, self.y)
 
 class normal_opp(opponent):
 	def __init__(self, x, y):

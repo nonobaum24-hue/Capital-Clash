@@ -1,6 +1,7 @@
 import os
 import pygame
 from game_classes import *
+from random import randint
 
 width = 1250
 height = 720
@@ -38,26 +39,31 @@ running = True
 clock = pygame.time.Clock()
 
 opp1 = normal_opp(0, 0)
-opp2 = normal_opp(100, 300)
-opp3 = normal_opp(300, 100)
-opp4 = normal_opp(400, 400)
-opp5 = normal_opp(500, 200)
-opponentbars = [opp1, opp2, opp3, opp4, opp5]
+opp2 = normal_opp(0, 0)
+opp3 = normal_opp(0, 0)
+opp4 = normal_opp(0, 0)
+opp5 = normal_opp(0, 0)
+opponentcache = [opp1, opp2, opp3, opp4, opp5]
 opponents = []
 
 # Für jeden Gegner eine Healthbar erstellen (follow=True hält sie über dem Kopf)
-opp_bars = [health_bar(-40, 0, 60, 7, opp, follow=True) for opp in opponentbars]
+opp_bars = [health_bar(-40, 0, 60, 7, opp, follow=True) for opp in opponentcache]
 roundtick = 3600 # 60 Sekunden bei 60 FPS
 
 
 while running and roundtick > 0:
 
-	# Gegner spawnen zu bestimmten Zeiten
+	# Gegner spawnen zu bestimmten Zeiten, Position wird intern von Gegnern verwaltet, damit sie nicht direkt neben dem Spieler spawnen
 	if roundtick == 3600: # Gegner 1 spawnt nach 0 Sekunden
+		opp1.set_position_out_of_range_of_player(marx_char)
+		opp2.set_position_out_of_range_of_player(marx_char)
 		opponents = opponents + [opp1, opp2]
 	elif roundtick == 1800: # Gegner 3 spawnt nach 30 Sekunden
+		opp3.set_position_out_of_range_of_player(marx_char)
 		opponents = opponents + [opp3]
 	elif roundtick == 1800 - 5*60: # Gegner 4 und 5 spawnen nach 35 Sekunden
+		opp4.set_position_out_of_range_of_player(marx_char)
+		opp5.set_position_out_of_range_of_player(marx_char)
 		opponents = opponents + [opp4, opp5]
 	
 	roundtick -= 1
