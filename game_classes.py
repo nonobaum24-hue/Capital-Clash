@@ -233,7 +233,6 @@ class opponent:
 
 		self.offset_x = uniform(-20, 20)
 		self.offset_y = uniform(-20, 20)
-		self.speed = 2 + uniform(-0.5, 0.5)
 		self.vx = 0
 		self.vy = 0
 
@@ -278,7 +277,7 @@ class opponent:
 
 		dist = (dx**2 + dy**2) ** 0.5
 
-		# STOP wenn nah genug (verhindert Zittern)
+		# STOP wenn nah genug am Ziel, um Flackern zu vermeiden
 		if dist < 5:
 			self.vx = 0
 			self.vy = 0
@@ -288,7 +287,7 @@ class opponent:
 		dx /= dist
 		dy /= dist
 
-		# Smooth Movement (kein Wobble mehr)
+		# Smooth Movement
 		self.vx += (dx * self.speed - self.vx) * 0.1
 		self.vy += (dy * self.speed - self.vy) * 0.1
 
@@ -323,6 +322,7 @@ class normal_opp(opponent):
 		self.x = x
 		self.y = y
 		self.tick = 0
+		self.speed = 2 + uniform(-0.5, 0.5)
 
 		# Bilder laden
 		self.script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -357,7 +357,7 @@ class normal_opp(opponent):
 		return self.alive
 	
 	def followplayer(self, player):
-		self.follow(player, speed=2.5)
+		self.followplayer(player)
 	
 	def damageplayer(self, player, damage_screen=None):
 		player.get_damage(20, damage_screen)
