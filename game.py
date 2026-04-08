@@ -38,13 +38,30 @@ clock = pygame.time.Clock()
 
 opp1 = normal_opp(0, 0)
 opp2 = normal_opp(100, 300)
-opponents = [opp1, opp2]
+opp3 = normal_opp(300, 100)
+opp4 = normal_opp(400, 400)
+opp5 = normal_opp(500, 200)
+opponents = []
 
 # Für jeden Gegner eine Healthbar erstellen (follow=True hält sie über dem Kopf)
 opp_bars = [health_bar(-40, 0, 60, 7, opp, follow=True) for opp in opponents]
 
+roundtick = 7200 # zwei Minuten Spielzeit bei 60 FPS
 
-while running:
+
+while running and roundtick > 0:
+
+	# Gegner spawnen zu bestimmten Zeiten
+	if roundtick == 7200: # Gegner 1 spawnt nach 0 Sekunden
+		opponents = opponents + [opp1]
+	elif roundtick == 5400: # Gegner 2 spawnt nach 30 Sekunden
+		opponents = opponents + [opp2]
+	elif roundtick == 3600: # Gegner 3 spawnt nach 60 Sekunden
+		opponents = opponents + [opp3]
+	elif roundtick == 1800: # Gegner 4 und 5 spawnen nach 90 Sekunden
+		opponents = opponents + [opp4, opp5]
+	
+	roundtick -= 1
 	screen.fill((0,0,0))
 	
 	screen.blit(floor_img, (0, 0))
