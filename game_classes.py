@@ -125,9 +125,13 @@ class marx:
 			self.attack_cooldown = 30  # 0.5 Sekunden Cooldown bei 60 FPS
 
 
-	def get_damage(self, damage):
+	def get_damage(self, damage, damage_screen=None):
+		self.damage_screen = damage_screen
 		if self.alive:
 			self.health_points -= damage
+			if self.damage_screen:
+				self.damage_screen.trigger()
+
 			if self.health_points <= 0:
 				self.dead()
 	
