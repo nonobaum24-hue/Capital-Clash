@@ -369,7 +369,7 @@ class super_opp(opponent):
 		script_dir = os.path.dirname(os.path.abspath(__file__))
 		super_opp1_path = os.path.join(script_dir, "super_opp1.png")
 		super_opp2_path = os.path.join(script_dir, "super_opp2.png")
-		self.image1 = load_image(super_opp1_path, scale=0.25)
-		self.image2 = load_image(super_opp2_path, scale=0.25)
+		self.image1 = load_image(super_opp1_path, scale=0.3)
+		self.image2 = load_image(super_opp2_path, scale=0.3)
 		self.image = self.image1
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
