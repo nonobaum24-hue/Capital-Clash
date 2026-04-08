@@ -322,7 +322,7 @@ class normal_opp(opponent):
 		self.x = x
 		self.y = y
 		self.tick = 0
-		self.speed = 2 + uniform(-0.5, 0.5)
+		self.speed = 3 + uniform(-0.5, 0.5)
 
 		# Bilder laden
 		self.script_dir = os.path.dirname(os.path.abspath(__file__))
