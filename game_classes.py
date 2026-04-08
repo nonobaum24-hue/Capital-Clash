@@ -140,13 +140,13 @@ class damage_area:
 		self.damagemulti = 1
 		self.origin = origin
 		self.normal_width = 150
+		self.color = (255, 255, 255, 125)  # Weiß mit Transparenz
 	
 	def getparentposition(self):
 		position = self.origin.get_rect().center
 		return position
 	
 	def drawrect(self, screen):
-		self.color = (255, 255, 255, 125)  # Weiß mit Transparenz
 		radius = 200
 		target_rect = pygame.Rect(self.getparentposition(), (0, 0)).inflate((radius * 2, radius * 2))
 		shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
