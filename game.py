@@ -31,6 +31,7 @@ except Exception as e:
 marx_char = marx(width // 2, height // 2, marx_path, marx_path2)
 marx_bar = health_bar(1250 - 220, 20, 200, 20, marx_char)
 marx_area = damage_area(marx_char)
+dmg_scr = damage_screen()
 
 running = True
 
@@ -80,7 +81,7 @@ while running and roundtick > 0:
 	for opp in opponents:
 		opp.followplayer(marx_char)
 		opp.animation()
-		opp.checkcollision(marx_char)
+		opp.checkcollision(marx_char, dmg_scr)
 		opp.draw(screen)
 
 	# Healthbars der lebenden Gegner zeichnen

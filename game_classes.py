@@ -259,10 +259,10 @@ class opponent:
 			if self.x == player_x and self.y == player_y:
 				self.is_moving = False
 
-	def checkcollision(self, player):
+	def checkcollision(self, player, damage_screen=None):
 		if self.damagecooldown == 0:
 			if self.rect.colliderect(player.get_rect()) and self.alive:
-				self.damageplayer(player)
+				self.damageplayer(player, damage_screen)
 		self.damagecooldown += 1
 		if self.damagecooldown >= 60:  # 1 Sekunde Cooldown bei
 			self.damagecooldown = 0
@@ -312,5 +312,5 @@ class normal_opp(opponent):
 	def followplayer(self, player):
 		self.follow(player, speed=2.5)
 	
-	def damageplayer(self, player):
-		player.get_damage(20)
+	def damageplayer(self, player, damage_screen=None):
+		player.get_damage(20, damage_screen)
