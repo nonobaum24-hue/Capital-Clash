@@ -363,7 +363,7 @@ class super_opp(opponent):
 		self.x = x
 		self.y = y
 		self.speed = 2 + uniform(-0.5, 0.5)
-		self.damage = 40
+		self.damage = 34
 
 		# Bilder laden
 		script_dir = os.path.dirname(os.path.abspath(__file__))
