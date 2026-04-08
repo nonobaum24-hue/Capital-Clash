@@ -41,10 +41,11 @@ opp2 = normal_opp(100, 300)
 opp3 = normal_opp(300, 100)
 opp4 = normal_opp(400, 400)
 opp5 = normal_opp(500, 200)
+opponentbars = [opp1, opp2, opp3, opp4, opp5]
 opponents = []
 
 # Für jeden Gegner eine Healthbar erstellen (follow=True hält sie über dem Kopf)
-opp_bars = [health_bar(-40, 0, 60, 7, opp, follow=True) for opp in opponents]
+opp_bars = [health_bar(-40, 0, 60, 7, opp, follow=True) for opp in opponentbars]
 
 roundtick = 7200 # zwei Minuten Spielzeit bei 60 FPS
 
