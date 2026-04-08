@@ -1,6 +1,6 @@
 import os
 import pygame
-from random import randint
+from random import randint, uniform
 
 # Bild-Cache und Helfer zum (einmaligen) Laden + Skalieren von Bildern (KI)
 _IMAGE_CACHE = {}
@@ -230,6 +230,8 @@ class opponent:
 		self.health_points = health_points
 		self.is_moving = True
 		self.damagecooldown = 0
+		self.offset_x = uniform(-20, 20)
+		self.offset_y = uniform(-20, 20)
 
 	def skinchange(self, new_image):
 		if isinstance(new_image, str):
@@ -260,6 +262,8 @@ class opponent:
 
 	def follow(self, player, speed):
 		player_x, player_y = self.getplayerposition(player)
+		player_x += self.offset_x
+		player_y += self.offset_y
 		if self.alive:
 			if player_x < self.x:
 				self.move(-speed, 0)
