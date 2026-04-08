@@ -287,11 +287,11 @@ class opponent:
 		self.exception_x_start, self.exception_x_end, self.exception_y_start, self.exception_y_end = player.get_exception_area()
 		while True:
 			self.x = randint(0, 1250 - self.rect.width)
-			if self.x <self.exception_x_start and self.x > self.exception_x_end:
+			if self.x <self.exception_x_start or self.x > self.exception_x_end:
 				break
 		while True:
 			self.y = randint(0, 720 - self.rect.height)
-			if self.y < self.exception_y_start and self.y > self.exception_y_end:
+			if self.y < self.exception_y_start or self.y > self.exception_y_end:
 				break
 		self.rect.topleft = (self.x, self.y)
 
