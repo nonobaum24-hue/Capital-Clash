@@ -22,6 +22,7 @@ class marx:
 		self.alive = True
 		self.scale = scale
 		self.health_points = health_points
+		self.damage = 30
 
 		self.screen_w = screen_w
 		self.screen_h = screen_h
@@ -110,7 +111,7 @@ class marx:
 		if keys[pygame.K_SPACE] and self.attack_cooldown == 0:
 			for opp in opponents:
 				if opp.rect.colliderect(area.getrect()):
-					opp.getdamage(50)
+					opp.getdamage(self.damage)
 			self.attack_cooldown = 30  # 0.5 Sekunden Cooldown bei 60 FPS
 
 

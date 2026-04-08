@@ -92,8 +92,6 @@ while running and roundtick > 0:
 	alive_opponents = [opp for opp in opponents if opp.update()]
 	opp_bars = [bar for bar in opp_bars if bar.object.alive]
 	opponents = alive_opponents
-	if not opponents:
-		print("Alle Gegner besiegt!")
 
 	marx_bar.draw(screen)
 
