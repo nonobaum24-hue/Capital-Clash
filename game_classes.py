@@ -25,7 +25,7 @@ class marx:
 		self.scale = scale
 		self.health_points = health_points
 		self.damage = 30
-		self.exception_radius = 250
+		self.exception_radius = 150  # Radius um den Spieler, in dem Gegner nicht spawnen sollen
 
 		# Bildschirmgröße speichern für Bewegungsbegrenzung
 		self.screen_w = screen_w
@@ -362,7 +362,7 @@ class super_opp(opponent):
 		opponent.__init__(self, health_points=300)
 		self.x = x
 		self.y = y
-		self.speed = 1.5 + uniform(-0.5, 0.5)
+		self.speed = 2 + uniform(-0.5, 0.5)
 		self.damage = 40
 
 		# Bilder laden
