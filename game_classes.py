@@ -234,21 +234,21 @@ class opponent:
 
 class normal_opp(opponent):
 	def __init__(self, x, y):
-		opponent.__init__(self, health_points=100)
+		opponent.__init__(self, health_points=150)
 		self.x = x
 		self.y = y
 		self.tick = 0
+
+		# Bilder laden
 		self.script_dir = os.path.dirname(os.path.abspath(__file__))
 		self.normal_opp1_path = os.path.join(self.script_dir, "normal_opp1.png")
 		self.normal_opp2_path = os.path.join(self.script_dir, "normal_opp2.png")
-
 		self.normal_opp1_image = load_image(self.normal_opp1_path, scale=0.25)
 		self.normal_opp2_image = load_image(self.normal_opp2_path, scale=0.25)
-
 		self.image = self.normal_opp1_image
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
 
-	def animation(self,):
+	def animation(self):
 		self.tick += 1
 		if self.tick >= 15 and self.is_moving == True and self.alive == True:
 			if self.isfirst_skin == False:
