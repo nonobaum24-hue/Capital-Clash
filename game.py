@@ -77,6 +77,7 @@ while running and roundtick > 0:
 	alive, position = marx_char.update()
 	marx_area.drawrect(screen)
 	marx_char.draw(screen)
+	dmg_scr.draw(screen)
 
 	for opp in opponents:
 		opp.followplayer(marx_char)

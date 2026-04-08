@@ -180,12 +180,12 @@ class damage_screen:
 
 	def draw(self, screen):
 		if self.counter > 0:
-			effect_surf = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-			effect_surf.fill(self.color)
-			screen.blit(effect_surf, (0, 0))
 			self.counter -= 1
 		else:
 			self.color = (255, 0, 0, 0)  # Effekt beenden
+		effect_surf = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+		effect_surf.fill(self.color)
+		screen.blit(effect_surf, (0, 0))
 
 class health_bar:
 	def __init__(self, x, y, width, height, object, follow=False):
