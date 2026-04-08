@@ -46,7 +46,6 @@ opponents = []
 
 # Für jeden Gegner eine Healthbar erstellen (follow=True hält sie über dem Kopf)
 opp_bars = [health_bar(-40, 0, 60, 7, opp, follow=True) for opp in opponentbars]
-
 roundtick = 7200 # zwei Minuten Spielzeit bei 60 FPS
 
 
@@ -88,7 +87,7 @@ while running and roundtick > 0:
 
 	# Healthbars der lebenden Gegner zeichnen
 	for bar in opp_bars:
-		if bar.object.alive:
+		if bar.object.alive and bar.object in opponents:
 			bar.draw(screen)
 
 	
