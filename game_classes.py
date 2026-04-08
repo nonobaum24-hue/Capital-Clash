@@ -230,8 +230,14 @@ class opponent:
 		self.health_points = health_points
 		self.is_moving = True
 		self.damagecooldown = 0
+
 		self.offset_x = uniform(-20, 20)
 		self.offset_y = uniform(-20, 20)
+		self.speed = 2 + uniform(-0.5, 0.5)
+		self.vx = 0
+		self.vy = 0
+
+
 
 	def skinchange(self, new_image):
 		if isinstance(new_image, str):
@@ -260,21 +266,33 @@ class opponent:
 		if self.alive:
 			screen.blit(self.image, (self.x, self.y))
 
-	def follow(self, player, speed):
+	def followplayer(self, player):
 		player_x, player_y = self.getplayerposition(player)
-		player_x += self.offset_x
-		player_y += self.offset_y
-		if self.alive:
-			if player_x < self.x:
-				self.move(-speed, 0)
-			elif player_x > self.x:
-				self.move(speed, 0)
-			if player_y < self.y:
-				self.move(0, -speed)
-			elif player_y > self.y:
-				self.move(0, speed)
-			if self.x == player_x and self.y == player_y:
-				self.is_moving = False
+
+		# Ziel mit Offset
+		target_x = player_x + self.offset_x
+		target_y = player_y + self.offset_y
+
+		dx = target_x - self.x
+		dy = target_y - self.y
+
+		dist = (dx**2 + dy**2) ** 0.5
+
+		# STOP wenn nah genug (verhindert Zittern)
+		if dist < 5:
+			self.vx = 0
+			self.vy = 0
+			return
+
+		# Normalisieren
+		dx /= dist
+		dy /= dist
+
+		# Smooth Movement (kein Wobble mehr)
+		self.vx += (dx * self.speed - self.vx) * 0.1
+		self.vy += (dy * self.speed - self.vy) * 0.1
+
+		self.move(self.vx, self.vy)
 
 	def checkcollision(self, player, damage_screen=None):
 		if self.damagecooldown == 0:
