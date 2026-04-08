@@ -42,6 +42,8 @@ opp2 = normal_opp(0, 0)
 opp3 = normal_opp(0, 0)
 opp4 = normal_opp(0, 0)
 opp5 = normal_opp(0, 0)
+super_opp1 = super_opp(0, 0)
+super_opp2 = super_opp(0, 0)
 opponentcache = [opp1, opp2, opp3, opp4, opp5]
 opponents = []
 
@@ -50,7 +52,7 @@ opp_bars = [health_bar(-40, 0, 60, 7, opp, follow=True) for opp in opponentcache
 roundtick = 3600 # 60 Sekunden bei 60 FPS
 
 
-while running and roundtick > 0:
+while running:
 
 	# Gegner spawnen zu bestimmten Zeiten, Position wird intern von Gegnern verwaltet, damit sie nicht direkt neben dem Spieler spawnen
 	if roundtick == 3600: # Gegner 1 spawnt nach 0 Sekunden
@@ -64,6 +66,10 @@ while running and roundtick > 0:
 		opp4.set_position_out_of_range_of_player(marx_char)
 		opp5.set_position_out_of_range_of_player(marx_char)
 		opponents = opponents + [opp4, opp5]
+	elif roundtick == 900: # Super-Gegner spawnen nach 45 Sekunden
+		super_opp1.set_position_out_of_range_of_player(marx_char)
+		super_opp2.set_position_out_of_range_of_player(marx_char)
+		opponents = opponents + [super_opp1, super_opp2]
 	
 	roundtick -= 1
 	screen.fill((0,0,0))
