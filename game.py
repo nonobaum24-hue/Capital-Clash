@@ -53,7 +53,7 @@ while running and roundtick > 0:
 
 	# Gegner spawnen zu bestimmten Zeiten
 	if roundtick == 3600: # Gegner 1 spawnt nach 0 Sekunden
-		opponents = opponents + [opp1+opp2]
+		opponents = opponents + [opp1, opp2]
 	elif roundtick == 1800: # Gegner 3 spawnt nach 60 Sekunden
 		opponents = opponents + [opp3]
 	elif roundtick == 1800 - 5*60: # Gegner 4 und 5 spawnen nach 65 Sekunden
