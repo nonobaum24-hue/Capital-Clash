@@ -164,6 +164,24 @@ class damage_area:
 	def turnwhite(self):
 		self.color = (255, 255, 255, 125)  # Weiß mit Transparenz
 
+class damage_screen:
+	def __init__(self):
+		self.color = (255, 0, 0, 0)  # Rot mit Transparenz
+		self.duration = 20  # Dauer des Effekts in Frames
+		self.counter = 0
+
+	def trigger(self):
+		self.color = (255, 0, 0, 80)  # Effekt starten
+		self.counter = self.duration
+
+	def draw(self, screen):
+		if self.counter > 0:
+			effect_surf = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+			effect_surf.fill(self.color)
+			screen.blit(effect_surf, (0, 0))
+			self.counter -= 1
+		else:
+			self.color = (255, 0, 0, 0)  # Effekt beenden
 
 class health_bar:
 	def __init__(self, x, y, width, height, object, follow=False):
