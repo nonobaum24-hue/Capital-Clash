@@ -373,3 +373,20 @@ class super_opp(opponent):
 		self.image2 = load_image(super_opp2_path, scale=1)
 		self.image = self.image1
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+
+class mini_opp(opponent):
+	def __init__(self, x, y):
+		opponent.__init__(self, health_points=75)
+		self.x = x
+		self.y = y
+		self.speed = 4 + uniform(-0.5, 0.5)
+		self.damage = 5
+
+		# Bilder laden
+		script_dir = os.path.dirname(os.path.abspath(__file__))
+		mini_opp1_path = os.path.join(script_dir, "mini_opp1.png")
+		mini_opp2_path = os.path.join(script_dir, "mini_opp2.png")
+		self.image1 = load_image(mini_opp1_path, scale=0.15)
+		self.image2 = load_image(mini_opp2_path, scale=0.15)
+		self.image = self.image1
+		self.rect = self.image.get_rect(topleft=(self.x, self.y))
