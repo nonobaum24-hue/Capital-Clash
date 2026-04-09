@@ -224,7 +224,7 @@ class opponent:
 	def getdamage(self, damage):
 		self.health_points -= damage
 		if self.health_points <= 0:
-			self.alive = False          # FIX: spawn_collectible() entfernt (war kaputt, läuft jetzt extern)
+			self.alive = False
 
 	def gethealth(self):
 		return self.health_points
@@ -299,7 +299,7 @@ class opponent:
 
 class normal_opp(opponent):
 	def __init__(self, x, y):
-		super().__init__(health_points=150)     # FIX: kein coll_manager mehr nötig
+		super().__init__(health_points=150)
 		self.x = x
 		self.y = y
 		self.speed  = 3 + uniform(-0.5, 0.5)
@@ -425,12 +425,12 @@ class collectible:
 
 	def trigger_effect(self, opponents):
 		if self.effect == "health":
-			self.player.heal(25)                        # FIX: heal() statt direkt +=, cappt auf max_health
+			self.player.heal(25)
 		elif self.effect == "aoe":
 			for opp in opponents:
 				opp.getdamage(10)
 		elif self.effect == "revive":
-			self.player.max_health += 20                # FIX: max_health (war maxhealth → NameError)
+			self.player.max_health += 10
 			self.player.health_points = self.player.max_health
 
 
@@ -466,11 +466,7 @@ class collectible_manager:
 		self._dropped     = set()   # IDs von Gegnern, die schon einen Drop hatten
 
 	def collectible_tick(self, screen, opponents):
-		"""
-		Muss VOR dem Cleanup aufgerufen werden, damit tote Gegner (alive=False)
-		noch in der Liste sind und ihre Drops gespawnt werden können.
-		"""
-		# FIX: Drop-Erkennung läuft hier, nicht mehr in opponent.getdamage()
+		#Dran denken: vor dem Cleanup wegen tote-Gegner-Bug
 		for opp in opponents:
 			if not opp.alive and id(opp) not in self._dropped:
 				self._dropped.add(id(opp))
@@ -479,7 +475,6 @@ class collectible_manager:
 					if cls:
 						self.collectibles.append(cls(opp.x, opp.y, self.player))
 
-		# FIX: Liste NICHT während der Iteration verändern (war ein Bug)
 		active = []
 		for c in self.collectibles:
 			c.collectcheck(opponents)

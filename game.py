@@ -42,7 +42,6 @@ SCHEDULE = [
 
 spawn_manager = SpawnManager(SCHEDULE)
 # FIX: Variable heißt jetzt coll_manager, nicht collectible_manager
-#      (sonst würde der Variablenname die Klasse überschreiben → NameError)
 coll_manager  = collectible_manager(marx_char)
 opponents     = []
 roundtick     = 3600   # 60 Sekunden bei 60 FPS
@@ -84,9 +83,7 @@ while running:
 		if bar.object.alive and bar.object in opponents:
 			bar.draw(screen)
 
-	# FIX: collectible_tick VOR dem Cleanup aufrufen, damit tote Gegner
-	#      (alive=False) noch erkannt und ihr Drop gespawnt werden kann.
-	#      Außerdem screen übergeben (war vorher vergessen).
+	# Wichtig! collectible_tick VOR dem Cleanup aufrufen
 	coll_manager.collectible_tick(screen, opponents)
 
 	# ── Cleanup ───────────────────────────────────────────────────────────────
