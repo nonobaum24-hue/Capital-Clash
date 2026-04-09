@@ -352,8 +352,8 @@ class normal_opp(opponent):
 		script_dir = os.path.dirname(os.path.abspath(__file__))
 		normal_opp1_path = os.path.join(script_dir, "normal_opp1.png")
 		normal_opp2_path = os.path.join(script_dir, "normal_opp2.png")
-		self.image1 = load_image(normal_opp1_path, scale=0.25)
-		self.image2 = load_image(normal_opp2_path, scale=0.25)
+		self.image1 = load_image(normal_opp1_path, scale=0.28)
+		self.image2 = load_image(normal_opp2_path, scale=0.28)
 		self.image = self.image1
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
 
@@ -386,8 +386,8 @@ class mini_opp(opponent):
 		script_dir = os.path.dirname(os.path.abspath(__file__))
 		mini_opp1_path = os.path.join(script_dir, "mini_opp1.png")
 		mini_opp2_path = os.path.join(script_dir, "mini_opp2.png")
-		self.image1 = load_image(mini_opp1_path, scale=0.15)
-		self.image2 = load_image(mini_opp2_path, scale=0.15)
+		self.image1 = load_image(mini_opp1_path, scale=0.09)
+		self.image2 = load_image(mini_opp2_path, scale=0.09)
 		self.image = self.image1
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
 
