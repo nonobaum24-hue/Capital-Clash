@@ -2,10 +2,9 @@ import os
 import pygame
 from random import randint, uniform
 
-# Bild-Cache und Helfer zum (einmaligen) Laden + Skalieren von Bildern (KI)
+# Bild-Cache und Helfer zum (einmaligen) Laden + Skalieren von Bildern
 _IMAGE_CACHE = {}
 def load_image(path, scale=0.25):
-	# key nach Pfad + Scale, damit verschiedene Skalierungen separat gecached werden
 	key = (os.path.abspath(path), float(scale))
 	if key in _IMAGE_CACHE:
 		return _IMAGE_CACHE[key]
@@ -16,44 +15,41 @@ def load_image(path, scale=0.25):
 	_IMAGE_CACHE[key] = img
 	return img
 
+
+# ── Spieler ───────────────────────────────────────────────────────────────────
+
 class marx:
 	def __init__(self, x, y, idle_path, run_path, scale=0.25, health_points=100, screen_w=1250, screen_h=720):
-		# Initialisiert den Spieler mit Position, Bildpfaden, Skalierung, Gesundheit und Bildschirmgröße
 		self.x = x
 		self.y = y
 		self.alive = True
 		self.scale = scale
 		self.health_points = health_points
+		self.max_health = health_points          # FIX: max_health gespeichert (für Heal-Cap und Revive)
 		self.damage = 30
-		self.exception_radius = 150  # Radius um den Spieler, in dem Gegner nicht spawnen sollen
+		self.exception_radius = 150
 
-		# Bildschirmgröße speichern für Bewegungsbegrenzung
 		self.screen_w = screen_w
 		self.screen_h = screen_h
 
-		# Lade beide Skins direkt
 		self.stand_bild = load_image(idle_path, scale=self.scale)
-		self.lauf_bild = load_image(run_path, scale=self.scale)
+		self.lauf_bild  = load_image(run_path,  scale=self.scale)
 
-		# Starte mit Idle
 		self.image = self.stand_bild
-		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+		self.rect  = self.image.get_rect(topleft=(self.x, self.y))
 
-		# Animation State
-		self.framecount_skin = 0
-		self.is_first_skin = True
-		self.prev_is_moving = False
-
-		# Attack Cooldown
-		self.attack_cooldown = 0
+		self.framecount_skin  = 0
+		self.is_first_skin    = True
+		self.prev_is_moving   = False
+		self.attack_cooldown  = 0
 
 	def dead(self):
 		self.alive = False
 
-	def move(self, dx, dy): # Bewegt den Spieler, prüft aber vorher, ob er sich noch im Bildschirm befindet
-		if self.x + dx > 0 and self.x + dx < self.screen_w - self.rect.width:
+	def move(self, dx, dy):
+		if 0 < self.x + dx < self.screen_w - self.rect.width:
 			self.x += dx
-		if self.y + dy > 0 and self.y + dy < self.screen_h - self.rect.height:
+		if 0 < self.y + dy < self.screen_h - self.rect.height:
 			self.y += dy
 		self.rect.topleft = (self.x, self.y)
 
@@ -65,104 +61,81 @@ class marx:
 		return self.rect
 
 	def tick_animation(self, is_moving):
-		# Detect Start/Stop
 		if is_moving and not self.prev_is_moving:
-			# Bewegung gestartet: sofort Run-Skin zeigen
 			self.image = self.lauf_bild
-			self.is_first_skin = False
+			self.is_first_skin  = False
 			self.framecount_skin = 0
 			self.rect = self.image.get_rect(topleft=(self.x, self.y))
 		elif is_moving:
-			# Laufanimation
 			self.framecount_skin += 1
 			if self.framecount_skin >= 15:
-				# toggle zwischen Idle und Run-Surface
-				if self.is_first_skin == False:
-					self.image = self.stand_bild
-					self.is_first_skin = True
-				else:
-					self.image = self.lauf_bild
-					self.is_first_skin = False
+				self.image = self.stand_bild if not self.is_first_skin else self.lauf_bild
+				self.is_first_skin = not self.is_first_skin
 				self.rect = self.image.get_rect(topleft=(self.x, self.y))
 				self.framecount_skin = 0
 		else:
-			# Nicht bewegend: zurück zu Idle
 			self.image = self.stand_bild
 			self.framecount_skin = 0
-			self.is_first_skin = True
+			self.is_first_skin   = True
 
 		self.prev_is_moving = is_moving
 
 	def update(self):
-		position = (self.x, self.y)
-		return self.alive, position
+		return self.alive, (self.x, self.y)
 
-	def input_monitoring(self, keys, area, opponents): # Verarbeitet Bewegung und Angriffe basierend auf Tasteneingaben
-		if keys[pygame.K_LEFT]:
-			self.move(-5, 0)
-		if keys[pygame.K_RIGHT]:
-			self.move(5, 0)
-		if keys[pygame.K_UP]:
-			self.move(0, -5)
-		if keys[pygame.K_DOWN]:
-			self.move(0, 5)
+	def input_monitoring(self, keys, area, opponents):
+		if keys[pygame.K_LEFT]:  self.move(-5,  0)
+		if keys[pygame.K_RIGHT]: self.move( 5,  0)
+		if keys[pygame.K_UP]:    self.move( 0, -5)
+		if keys[pygame.K_DOWN]:  self.move( 0,  5)
 
-		# Attack Cooldown runterzählen
 		if self.attack_cooldown > 0:
 			self.attack_cooldown -= 1
 			area.turnred()
 		else:
 			area.turnwhite()
 
-		#Auswahl Liste bei mehrfachem Treffer
-		self.opp_list = []
-
 		if keys[pygame.K_SPACE] and self.attack_cooldown == 0:
-			# Alle Gegner durchgehen und prüfen, ob sie im Angriffsbereich sind
-			for opp in opponents:
-				if opp.rect.colliderect(area.getrect()):
-					self.opp_list.append(opp)
-			# Wenn Gegner in Reichweite, zufällig einen auswählen und Schaden zufügen
-			if self.opp_list:
-				self.chosen_opp = self.opp_list[randint(0, len(self.opp_list) - 1)]
-				self.chosen_opp.getdamage(self.damage)
-			self.attack_cooldown = 30  # 0.5 Sekunden Cooldown bei 60 FPS
-
+			in_range = [o for o in opponents if o.rect.colliderect(area.getrect())]
+			if in_range:
+				randint(0, len(in_range) - 1)
+				in_range[randint(0, len(in_range) - 1)].getdamage(self.damage)
+			self.attack_cooldown = 30
 
 	def get_damage(self, damage, damage_screen=None):
-		self.damage_screen = damage_screen
 		if self.alive:
 			self.health_points -= damage
-			#Bildschirm rot einfärben, wenn Schaden genommen wird
-			if self.damage_screen:
-				self.damage_screen.trigger()
-			# Überprüfen, ob Gesundheit auf 0 oder darunter gefallen ist
+			if damage_screen:
+				damage_screen.trigger()
 			if self.health_points <= 0:
 				self.dead()
-	
+
+	def heal(self, amount):                      # FIX: neue heal()-Methode, cappt auf max_health
+		if self.alive:
+			self.health_points = min(self.max_health, self.health_points + amount)
+
 	def gethealth(self):
 		return self.health_points
-	
-	def get_exception_area(self): # Berechnet den Bereich um den Spieler, in dem Gegner nicht spawnen sollen
+
+	def get_exception_area(self):
 		x, y = self.get_rect().center
-		exception_x_start = x - self.exception_radius
-		exception_x_end = x + self.exception_radius
-		exception_y_start = y - self.exception_radius
-		exception_y_end = y + self.exception_radius
-		return exception_x_start, exception_x_end, exception_y_start, exception_y_end
+		return (x - self.exception_radius, x + self.exception_radius,
+				y - self.exception_radius, y + self.exception_radius)
+
+
+# ── Kampf-Hilfsobjekte ────────────────────────────────────────────────────────
 
 class damage_area:
 	def __init__(self, origin):
-		self.widthmulti = 1
+		self.widthmulti  = 1
 		self.damagemulti = 1
-		self.origin = origin
+		self.origin      = origin
 		self.normal_width = 150
-		self.color = (255, 255, 255, 125)  # Weiß mit Transparenz
-	
+		self.color = (255, 255, 255, 125)
+
 	def getparentposition(self):
-		position = self.origin.get_rect().center
-		return position
-	
+		return self.origin.get_rect().center
+
 	def drawrect(self, screen):
 		radius = 200
 		target_rect = pygame.Rect(self.getparentposition(), (0, 0)).inflate((radius * 2, radius * 2))
@@ -171,76 +144,73 @@ class damage_area:
 		screen.blit(shape_surf, target_rect)
 
 	def getrect(self):
-		pos = self.getparentposition()
+		pos    = self.getparentposition()
 		radius = self.normal_width * self.widthmulti
 		return pygame.Rect(pos[0] - radius, pos[1] - radius, radius * 2, radius * 2)
-	
-	def turnred(self):
-		self.color = (255, 0, 0, 125)  # Rot mit Transparenz
-	
-	def turnwhite(self):
-		self.color = (255, 255, 255, 125)  # Weiß mit Transparenz
+
+	def turnred(self):   self.color = (255,   0, 0, 125)
+	def turnwhite(self): self.color = (255, 255, 255, 125)
+
 
 class damage_screen:
 	def __init__(self):
-		self.color = (255, 0, 0, 0)  # Rot mit Transparenz
-		self.duration = 20  # Dauer des Effekts in Frames
-		self.counter = 0
+		self.color    = (255, 0, 0, 0)
+		self.duration = 20
+		self.counter  = 0
 
 	def trigger(self):
-		self.color = (255, 0, 0, 80)  # Effekt starten
+		self.color   = (255, 0, 0, 80)
 		self.counter = self.duration
 
 	def draw(self, screen):
 		if self.counter > 0:
 			self.counter -= 1
 		else:
-			self.color = (255, 0, 0, 0)  # Effekt beenden
-		effect_surf = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-		effect_surf.fill(self.color)
-		screen.blit(effect_surf, (0, 0))
+			self.color = (255, 0, 0, 0)
+		surf = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+		surf.fill(self.color)
+		screen.blit(surf, (0, 0))
+
 
 class health_bar:
 	def __init__(self, x, y, width, height, object, follow=False):
-		self.x = x
-		self.y = y
-		self.width = width
-		self.height = height
+		self.x          = x
+		self.y          = y
+		self.width      = width
+		self.height     = height
 		self.max_health = object.gethealth()
-		self.health_points = self.max_health
-		self.object = object
-		self.follow = follow  # Wenn True: Bar folgt dem Objekt automatisch
+		self.object     = object
+		self.follow     = follow
 
 	def draw(self, screen):
-		self.health_points = self.object.gethealth()
-
-		# Position dynamisch aus dem Rect des Objekts berechnen
+		hp = self.object.gethealth()
 		if self.follow:
 			self.x = self.object.rect.x - 10
-			self.y = self.object.rect.y - 12  # 12px über dem Kopf
-
+			self.y = self.object.rect.y - 12
 		pygame.draw.rect(screen, (255, 0, 0), (self.x, self.y, self.width, self.height))
-		health_percentage = self.health_points / self.max_health
-		pygame.draw.rect(screen, (0, 255, 0), (self.x, self.y, self.width * health_percentage, self.height))
+		pct = max(0, hp / self.max_health)
+		pygame.draw.rect(screen, (0, 255, 0), (self.x, self.y, self.width * pct, self.height))
+
+
+# ── Gegner-Basisklasse ────────────────────────────────────────────────────────
 
 class opponent:
-	def __init__(self, health_points, coll_manager):
-		self.alive = True
-		self.isfirst_skin = False
-		self.health_points = health_points
-		self.is_moving = True
+	# FIX: coll_manager komplett entfernt — Drops werden jetzt vom collectible_manager erkannt
+	def __init__(self, health_points):
+		self.alive          = True
+		self.isfirst_skin   = False
+		self.health_points  = health_points
+		self.is_moving      = True
 		self.damagecooldown = 0
-		self.tick = 0
-
-		self.offset_x = uniform(-20, 20)
-		self.offset_y = uniform(-20, 20)
+		self.tick           = 0
+		self.offset_x       = uniform(-20, 20)
+		self.offset_y       = uniform(-20, 20)
 		self.vx = 0
 		self.vy = 0
 
-		self.manager = coll_manager
-
-
-
+		# Wird in Unterklassen gesetzt:
+		self.collectible        = None
+		self.collectible_chance = 0
 
 	def skinchange(self, new_image):
 		if isinstance(new_image, str):
@@ -251,25 +221,10 @@ class opponent:
 			raise TypeError("skinchange erwartet Pfad (str) oder pygame.Surface")
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
 
-	def spawn_collectible(self):
-		r = randint(1, 100)
-		if r <= self.collectible_chance:
-			if self.collectible == "heal":
-				x = "nr"+str(uniform(1, 4))
-				x = heal(self.x, self.y, self.player, self.manager)
-			elif self.collectible == "aoe":
-				x = "nr"+str(uniform(1, 4))
-				x = aoe(self.x, self.y, self.player, self.manager)
-			elif self.collectible == "revive":
-				x = "nr"+str(uniform(1, 4))
-				x = revive(self.x, self.y, self.player, self.manager)
-
-
 	def getdamage(self, damage):
 		self.health_points -= damage
 		if self.health_points <= 0:
-			self.alive = False
-			self.spawn_collectible()
+			self.alive = False          # FIX: spawn_collectible() entfernt (war kaputt, läuft jetzt extern)
 
 	def gethealth(self):
 		return self.health_points
@@ -285,254 +240,250 @@ class opponent:
 			screen.blit(self.image, (self.x, self.y))
 
 	def followplayer(self, player):
-		player_x, player_y = self.getplayerposition(player)
-
-		# Ziel mit Offset
-		target_x = player_x + self.offset_x
-		target_y = player_y + self.offset_y
-
+		target_x = player.x + self.offset_x
+		target_y = player.y + self.offset_y
 		dx = target_x - self.x
 		dy = target_y - self.y
-
 		dist = (dx**2 + dy**2) ** 0.5
-
-		# STOP wenn nah genug am Ziel, um Flackern zu vermeiden
 		if dist < 5:
-			self.vx = 0
-			self.vy = 0
+			self.vx = self.vy = 0
 			return
-
-		# Normalisieren
 		dx /= dist
 		dy /= dist
-
-		# Smooth Movement
 		self.vx += (dx * self.speed - self.vx) * 0.1
 		self.vy += (dy * self.speed - self.vy) * 0.1
-
 		self.move(self.vx, self.vy)
 
 	def checkcollision(self, player, damage_screen=None):
-		if self.damagecooldown == 0:
-			if self.rect.colliderect(player.get_rect()) and self.alive:
-				self.damageplayer(player, damage_screen)
+		if self.damagecooldown == 0 and self.rect.colliderect(player.get_rect()) and self.alive:
+			player.get_damage(self.damage, damage_screen)
 		self.damagecooldown += 1
-		if self.damagecooldown >= 60:  # 1 Sekunde Cooldown bei
+		if self.damagecooldown >= 60:
 			self.damagecooldown = 0
 
 	def update(self):
 		return self.alive
-	
+
 	def getplayerposition(self, player):
-		player_x = player.x
-		player_y = player.y
-		return player_x, player_y
-	
-	def damageplayer(self, player, damage_screen=None):
-		player.get_damage(self.damage, damage_screen)
-	
+		return player.x, player.y
+
 	def set_position_out_of_range_of_player(self, player):
-		self.exception_x_start, self.exception_x_end, self.exception_y_start, self.exception_y_end = player.get_exception_area()
+		ex0, ex1, ey0, ey1 = player.get_exception_area()
 		while True:
 			self.x = randint(0, 1250 - self.rect.width)
-			if self.x <self.exception_x_start or self.x > self.exception_x_end:
+			if self.x < ex0 or self.x > ex1:
 				break
 		while True:
 			self.y = randint(0, 720 - self.rect.height)
-			if self.y < self.exception_y_start or self.y > self.exception_y_end:
+			if self.y < ey0 or self.y > ey1:
 				break
 		self.rect.topleft = (self.x, self.y)
 
 	def animation(self):
 		self.tick += 1
-		if self.tick >= 15 and self.is_moving == True and self.alive == True:
-			if self.isfirst_skin == False:
+		if self.tick >= 15 and self.is_moving and self.alive:
+			if not self.isfirst_skin:
 				self.skinchange(self.image1)
 				self.isfirst_skin = True
 			else:
 				self.skinchange(self.image2)
 				self.isfirst_skin = False
 			self.tick = 0
-		elif self.is_moving == False and self.alive == True:
+		elif not self.is_moving and self.alive:
 			self.skinchange(self.image1)
 			self.isfirst_skin = True
 			self.tick = 0
 
+
+# ── Gegner-Unterklassen ───────────────────────────────────────────────────────
+
 class normal_opp(opponent):
 	def __init__(self, x, y):
-		opponent.__init__(self, health_points=150)
+		super().__init__(health_points=150)     # FIX: kein coll_manager mehr nötig
 		self.x = x
 		self.y = y
-		self.speed = 3 + uniform(-0.5, 0.5)
+		self.speed  = 3 + uniform(-0.5, 0.5)
 		self.damage = 15
 
-		# Bilder laden
 		script_dir = os.path.dirname(os.path.abspath(__file__))
-		normal_opp1_path = os.path.join(script_dir, "normal_opp1.png")
-		normal_opp2_path = os.path.join(script_dir, "normal_opp2.png")
-		self.image1 = load_image(normal_opp1_path, scale=0.28)
-		self.image2 = load_image(normal_opp2_path, scale=0.28)
-		self.image = self.image1
-		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+		self.image1 = load_image(os.path.join(script_dir, "normal_opp1.png"), scale=0.28)
+		self.image2 = load_image(os.path.join(script_dir, "normal_opp2.png"), scale=0.28)
+		self.image  = self.image1
+		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
-		self.collectible = "aoe"
-		self.collectible_chance = 40  # 40% Chance, ein AOE-Collectible zu droppen
+		self.collectible        = "aoe"
+		self.collectible_chance = 40
+
 
 class super_opp(opponent):
 	def __init__(self, x, y):
-		opponent.__init__(self, health_points=300)
+		super().__init__(health_points=300)
 		self.x = x
 		self.y = y
-		self.speed = 2 + uniform(-0.5, 0.5)
+		self.speed  = 2 + uniform(-0.5, 0.5)
 		self.damage = 25
 
-		# Bilder laden
 		script_dir = os.path.dirname(os.path.abspath(__file__))
-		super_opp1_path = os.path.join(script_dir, "super_opp1.png")
-		super_opp2_path = os.path.join(script_dir, "super_opp2.png")
-		self.image1 = load_image(super_opp1_path, scale=1)
-		self.image2 = load_image(super_opp2_path, scale=1)
-		self.image = self.image1
-		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+		self.image1 = load_image(os.path.join(script_dir, "super_opp1.png"), scale=1)
+		self.image2 = load_image(os.path.join(script_dir, "super_opp2.png"), scale=1)
+		self.image  = self.image1
+		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
-		self.collectible = "revive"
-		self.collectible_chance = 70  # 70% Chance, ein Revive-Collectible zu droppen
+		self.collectible        = "revive"
+		self.collectible_chance = 70
+
 
 class mini_opp(opponent):
 	def __init__(self, x, y):
-		opponent.__init__(self, health_points=60)
+		super().__init__(health_points=60)
 		self.x = x
 		self.y = y
-		self.speed = 4 + uniform(-0.5, 0.5)
+		self.speed  = 4 + uniform(-0.5, 0.5)
 		self.damage = 5
 
-		# Bilder laden
 		script_dir = os.path.dirname(os.path.abspath(__file__))
-		mini_opp1_path = os.path.join(script_dir, "mini_opp1.png")
-		mini_opp2_path = os.path.join(script_dir, "mini_opp2.png")
-		self.image1 = load_image(mini_opp1_path, scale=0.09)
-		self.image2 = load_image(mini_opp2_path, scale=0.09)
-		self.image = self.image1
-		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+		self.image1 = load_image(os.path.join(script_dir, "mini_opp1.png"), scale=0.09)
+		self.image2 = load_image(os.path.join(script_dir, "mini_opp2.png"), scale=0.09)
+		self.image  = self.image1
+		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
-		self.collectible = "heal"
-		self.collectible_chance = 30  # 30% Chance, ein Heal-Collectible zu droppen
+		self.collectible        = "heal"
+		self.collectible_chance = 30
+
+
+# ── SpawnManager ──────────────────────────────────────────────────────────────
 
 class SpawnManager:
-    """
-    Verwaltet das Spawnen von Gegnern anhand eines Plans (SCHEDULE).
+	"""
+	Verwaltet das Spawnen von Gegnern anhand eines Plans (SCHEDULE).
 
-    Jeder Eintrag im Schedule ist ein dict mit:
-      - "type"     : Klasse des Gegners (normal_opp, mini_opp, super_opp, BOSS_opp)
-      - "count"    : Anzahl der Gegner pro Spawn
-      - "tick"     : (optional) einmaliger Spawn bei genau diesem Tick
-      - "interval" : (optional) periodischer Spawn alle N Ticks
-      - "start"    : (optional, nur mit interval) ab welchem Tick gestartet wird (Standard: 0)
-      - "end"      : (optional, nur mit interval) bis zu welchem Tick gespawnt wird
-    """
-    def __init__(self, schedule: list[dict]):
-        self.schedule = schedule
-        self.all_opponents = []   # alle je gespawnten Gegner
-        self.opp_bars = []        # zugehörige Healthbars
+	Jeder Eintrag im Schedule ist ein dict mit:
+	  - "type"     : Klasse des Gegners (normal_opp, mini_opp, super_opp …)
+	  - "count"    : Anzahl der Gegner pro Spawn (Standard: 1)
+	  - "tick"     : (optional) einmaliger Spawn bei genau diesem Tick
+	  - "interval" : (optional) periodischer Spawn alle N Ticks
+	  - "start"    : (optional, nur mit interval) ab welchem Tick gestartet wird
+	  - "end"      : (optional, nur mit interval) bis zu welchem Tick gespawnt wird (Standard: 0)
+	"""
+	def __init__(self, schedule):
+		self.schedule      = schedule
+		self.all_opponents = []
+		self.opp_bars      = []
 
-    def tick(self, current_tick: int, player) -> list:
-        """
-        Gibt die neu gespawnten Gegner dieses Ticks zurück
-        und fügt sie intern zur Gesamtliste hinzu.
-        """
-        newly_spawned = []
+	def tick(self, current_tick, player):
+		newly_spawned = []
+		for entry in self.schedule:
+			opp_type     = entry["type"]
+			count        = entry.get("count", 1)
+			should_spawn = False
 
-        for entry in self.schedule:
-            opp_type  = entry["type"]
-            count     = entry.get("count", 1)
-            should_spawn = False
+			if "tick" in entry and entry["tick"] == current_tick:
+				should_spawn = True
+			elif "interval" in entry:
+				start = entry.get("start", current_tick)
+				end   = entry.get("end", 0)
+				# Tick zählt runter: start (hoch) >= current_tick >= end (niedrig)
+				if end <= current_tick <= start:
+					if (current_tick - start) % entry["interval"] == 0:
+						should_spawn = True
 
-            if "tick" in entry and entry["tick"] == current_tick:
-                should_spawn = True
+			if should_spawn:
+				for _ in range(count):
+					new_opp = opp_type(0, 0)
+					new_opp.set_position_out_of_range_of_player(player)
+					newly_spawned.append(new_opp)
+					self.opp_bars.append(health_bar(-40, 0, 60, 7, new_opp, follow=True))
 
-            elif "interval" in entry:
-                start = entry.get("start", 0)
-                end   = entry.get("end", float("inf"))
-                if start >= current_tick >= end:   # Tick zählt runter, daher >=
-                    interval = entry["interval"]
-                    if (current_tick - start) % interval == 0:
-                        should_spawn = True
+		self.all_opponents.extend(newly_spawned)
+		return newly_spawned
 
-            if should_spawn:
-                for _ in range(count):
-                    new_opp = opp_type(0, 0)
-                    new_opp.set_position_out_of_range_of_player(player)
-                    newly_spawned.append(new_opp)
-                    self.opp_bars.append(
-                        health_bar(-40, 0, 60, 7, new_opp, follow=True)
-                    )
+	def cleanup(self):
+		self.all_opponents = [o for o in self.all_opponents if o.alive]
+		self.opp_bars      = [b for b in self.opp_bars      if b.object.alive]
 
-        self.all_opponents.extend(newly_spawned)
-        return newly_spawned
 
-    def cleanup(self):
-        """Tote Gegner und ihre Healthbars entfernen."""
-        self.all_opponents = [o for o in self.all_opponents if o.alive]
-        self.opp_bars      = [b for b in self.opp_bars      if b.object.alive]
+# ── Collectibles ──────────────────────────────────────────────────────────────
 
 class collectible:
-	def __init__(self, x, y, image_path, effect, player, manager):
-		self.x = x
-		self.y = y
-		self.image = load_image(image_path, scale=0.25)
-		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+	def __init__(self, x, y, image_path, effect, player):
+		self.x         = x
+		self.y         = y
+		self.image     = load_image(image_path, scale=0.25)
+		self.rect      = self.image.get_rect(topleft=(self.x, self.y))
 		self.collected = False
-		self.effect = effect
-		self.player = player
-		manager.collectibles.append(self)
-
+		self.effect    = effect
+		self.player    = player
 
 	def spawn(self, screen):
-		if self.collected == False:
+		if not self.collected:
 			screen.blit(self.image, (self.x, self.y))
-	
+
 	def collectcheck(self, opponents):
-		if self.rect.colliderect(self.player.get_rect()):
+		if not self.collected and self.rect.colliderect(self.player.get_rect()):
 			self.collected = True
 			self.trigger_effect(opponents)
 
 	def trigger_effect(self, opponents):
 		if self.effect == "health":
-			self.player.health_points += 5
+			self.player.heal(25)                        # FIX: heal() statt direkt +=, cappt auf max_health
 		elif self.effect == "aoe":
 			for opp in opponents:
 				opp.getdamage(10)
 		elif self.effect == "revive":
+			self.player.max_health += 20                # FIX: max_health (war maxhealth → NameError)
 			self.player.health_points = self.player.max_health
-			self.player.maxhealth += 20
+
 
 class heal(collectible):
-	def __init__(self, x, y, player, manager):
+	def __init__(self, x, y, player):
 		script_dir = os.path.dirname(os.path.abspath(__file__))
-		image_path = os.path.join(script_dir, "heal.png")
-		super().__init__(x, y, image_path, effect="health", player=player, manager=manager)
+		super().__init__(x, y, os.path.join(script_dir, "heal.png"), "health", player)
 
 class aoe(collectible):
-	def __init__(self, x, y, player, manager):
+	def __init__(self, x, y, player):
 		script_dir = os.path.dirname(os.path.abspath(__file__))
-		image_path = os.path.join(script_dir, "aoe.png")
-		super().__init__(x, y, image_path, effect="aoe", player=player, manager=manager)
+		super().__init__(x, y, os.path.join(script_dir, "aoe.png"), "aoe", player)
 
 class revive(collectible):
-	def __init__(self, x, y, player, manager):
+	def __init__(self, x, y, player):
 		script_dir = os.path.dirname(os.path.abspath(__file__))
-		image_path = os.path.join(script_dir, "revive.png")
-		super().__init__(x, y, image_path, effect="revive", player=player, manager=manager)
+		super().__init__(x, y, os.path.join(script_dir, "revive.png"), "revive", player)
 
-class collectible_manager():
+# Mapping: collectible-String → Klasse
+_COLLECTIBLE_MAP = {
+	"heal":   heal,
+	"aoe":    aoe,
+	"revive": revive,
+}
+
+
+# ── collectible_manager ───────────────────────────────────────────────────────
+
+class collectible_manager:
 	def __init__(self, player):
+		self.player       = player
 		self.collectibles = []
-		self.player = player
+		self._dropped     = set()   # IDs von Gegnern, die schon einen Drop hatten
 
 	def collectible_tick(self, screen, opponents):
-		for i in self.collectibles:
-			i.collectcheck(opponents)
-			if i.collected == False:
-				i.spawn(screen)
-			if i.collected == True:
-				self.collectibles.remove(i)
+		"""
+		Muss VOR dem Cleanup aufgerufen werden, damit tote Gegner (alive=False)
+		noch in der Liste sind und ihre Drops gespawnt werden können.
+		"""
+		# FIX: Drop-Erkennung läuft hier, nicht mehr in opponent.getdamage()
+		for opp in opponents:
+			if not opp.alive and id(opp) not in self._dropped:
+				self._dropped.add(id(opp))
+				if opp.collectible and randint(1, 100) <= opp.collectible_chance:
+					cls = _COLLECTIBLE_MAP.get(opp.collectible)
+					if cls:
+						self.collectibles.append(cls(opp.x, opp.y, self.player))
+
+		# FIX: Liste NICHT während der Iteration verändern (war ein Bug)
+		active = []
+		for c in self.collectibles:
+			c.collectcheck(opponents)
+			if not c.collected:
+				c.spawn(screen)
+				active.append(c)
+		self.collectibles = active
