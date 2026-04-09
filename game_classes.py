@@ -16,6 +16,8 @@ def load_image(path, scale=0.25):
 	Lädt ein Bild von der Festplatte, skaliert es und gibt es zurück.
 	Wurde dasselbe Bild (gleicher Pfad + gleiche Scale) schon einmal geladen,
 	kommt es direkt aus dem Cache — kein doppeltes Laden nötig.
+	
+	Für diese Funktion wurde KI verwendet, da ich an der Performance und Fehlerlosigkeit verzwifelt bin.
 	"""
 	key = (os.path.abspath(path), float(scale))
 	if key in _IMAGE_CACHE:
@@ -41,7 +43,7 @@ class marx:
 	def __init__(self, x, y, idle_path, run_path, scale=0.25,
 	             health_points=100, screen_w=1250, screen_h=720):
 		"""
-		x, y          – Startposition (obere linke Ecke)
+		x, y          – Startposition (relativ zu obere linke Ecke)
 		idle_path     – Pfad zum Standbild
 		run_path      – Pfad zum Laufbild
 		scale         – Skalierungsfaktor für die Sprites
@@ -517,6 +519,7 @@ class super_opp(opponent):
 	"""
 	Starker Gegner. Hohe HP, langsam, hoher Schaden.
 	Droppt beim Tod mit 90% Chance ein Revive-Collectible (heilt auf Max + erhöht Max-HP).
+	Letzter Gegner vor BOSS (in Progress) → Belohnung entsprechend wertvoll.
 	"""
 	def __init__(self, x, y):
 		super().__init__(health_points=300)
@@ -578,6 +581,8 @@ class SpawnManager:
 	  "end"      → bis zu welchem Tick gespawnt wird    (Standard: 0)
 
 	Hinweis: roundtick zählt von 3600 auf 0 hinunter (= 60 Sekunden bei 60 FPS).
+
+	Diese Idee stammt von meinem Schwiegeronkel (Informatiker), wurde aber von mir umgesetzt.
 	"""
 
 	def __init__(self, schedule):
@@ -679,23 +684,23 @@ class collectible:
 		  revive → erhöht Max-HP um 10 und füllt HP komplett auf
 		"""
 		if self.effect == "health":
-			self.player.heal(25)
+			self.player.heal(15)
 		elif self.effect == "aoe":
 			for opp in opponents:
-				opp.getdamage(10)
+				opp.getdamage(25)
 		elif self.effect == "revive":
 			self.player.max_health    += 10                      # Max-HP dauerhaft erhöhen
 			self.player.health_points  = self.player.max_health  # HP voll auffüllen
 
 
 class heal(collectible):
-	"""Heilt Marx um 25 HP. Wird von mini_opp gedroppt."""
+	"""Heilt Marx um 15 HP. Wird von mini_opp gedroppt."""
 	def __init__(self, x, y, player):
 		script_dir = os.path.dirname(os.path.abspath(__file__))
 		super().__init__(x, y, os.path.join(script_dir, "heal.png"), "health", player)
 
 class aoe(collectible):
-	"""Fügt allen Gegnern auf dem Bildschirm 10 Schaden zu. Wird von normal_opp gedroppt."""
+	"""Fügt allen Gegnern auf dem Bildschirm 25 Schaden zu. Wird von normal_opp gedroppt."""
 	def __init__(self, x, y, player):
 		script_dir = os.path.dirname(os.path.abspath(__file__))
 		super().__init__(x, y, os.path.join(script_dir, "aoe.png"), "aoe", player)
