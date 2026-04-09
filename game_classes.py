@@ -312,7 +312,7 @@ class normal_opp(opponent):
 		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
 		self.collectible        = "aoe"
-		self.collectible_chance = 40
+		self.collectible_chance = 100
 
 
 class super_opp(opponent):
@@ -330,7 +330,7 @@ class super_opp(opponent):
 		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
 		self.collectible        = "revive"
-		self.collectible_chance = 70
+		self.collectible_chance = 100
 
 
 class mini_opp(opponent):
