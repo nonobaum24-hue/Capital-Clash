@@ -50,6 +50,7 @@ SCHEDULE = [
 ]
 
 spawn_manager = SpawnManager(SCHEDULE)
+collectible_manager = collectible_manager(marx_char)
 opponents = []
 
 roundtick = 3600 # 60 Sekunden bei 60 FPS
@@ -92,6 +93,7 @@ while running:
 	# ── Cleanup ───────────────────────────────────────────────────────
 	opponents = [o for o in opponents if o.alive]
 	spawn_manager.cleanup()
+	collectible_manager.collectible_tick(opponents)
 
 	marx_bar.draw(screen)
 	

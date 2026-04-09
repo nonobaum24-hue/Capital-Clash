@@ -224,7 +224,7 @@ class health_bar:
 		pygame.draw.rect(screen, (0, 255, 0), (self.x, self.y, self.width * health_percentage, self.height))
 
 class opponent:
-	def __init__(self, health_points):
+	def __init__(self, health_points, coll_manager):
 		self.alive = True
 		self.isfirst_skin = False
 		self.health_points = health_points
@@ -237,6 +237,9 @@ class opponent:
 		self.vx = 0
 		self.vy = 0
 
+		self.manager = coll_manager
+
+
 
 
 	def skinchange(self, new_image):
@@ -248,10 +251,25 @@ class opponent:
 			raise TypeError("skinchange erwartet Pfad (str) oder pygame.Surface")
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
 
+	def spawn_collectible(self):
+		r = randint(1, 100)
+		if r <= self.collectible_chance:
+			if self.collectible == "heal":
+				x = "nr"+str(uniform(1, 4))
+				x = heal(self.x, self.y, self.player, self.manager)
+			elif self.collectible == "aoe":
+				x = "nr"+str(uniform(1, 4))
+				x = aoe(self.x, self.y, self.player, self.manager)
+			elif self.collectible == "revive":
+				x = "nr"+str(uniform(1, 4))
+				x = revive(self.x, self.y, self.player, self.manager)
+
+
 	def getdamage(self, damage):
 		self.health_points -= damage
 		if self.health_points <= 0:
 			self.alive = False
+			self.spawn_collectible()
 
 	def gethealth(self):
 		return self.health_points
@@ -357,6 +375,9 @@ class normal_opp(opponent):
 		self.image = self.image1
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
 
+		self.collectible = "aoe"
+		self.collectible_chance = 40  # 40% Chance, ein AOE-Collectible zu droppen
+
 class super_opp(opponent):
 	def __init__(self, x, y):
 		opponent.__init__(self, health_points=300)
@@ -374,6 +395,9 @@ class super_opp(opponent):
 		self.image = self.image1
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
 
+		self.collectible = "revive"
+		self.collectible_chance = 70  # 70% Chance, ein Revive-Collectible zu droppen
+
 class mini_opp(opponent):
 	def __init__(self, x, y):
 		opponent.__init__(self, health_points=60)
@@ -390,6 +414,9 @@ class mini_opp(opponent):
 		self.image2 = load_image(mini_opp2_path, scale=0.09)
 		self.image = self.image1
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+
+		self.collectible = "heal"
+		self.collectible_chance = 30  # 30% Chance, ein Heal-Collectible zu droppen
 
 class SpawnManager:
     """
@@ -447,3 +474,65 @@ class SpawnManager:
         """Tote Gegner und ihre Healthbars entfernen."""
         self.all_opponents = [o for o in self.all_opponents if o.alive]
         self.opp_bars      = [b for b in self.opp_bars      if b.object.alive]
+
+class collectible:
+	def __init__(self, x, y, image_path, effect, player, manager):
+		self.x = x
+		self.y = y
+		self.image = load_image(image_path, scale=0.25)
+		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+		self.collected = False
+		self.effect = effect
+		self.player = player
+		manager.collectibles.append(self)
+
+
+	def spawn(self, screen):
+		if self.collected == False:
+			screen.blit(self.image, (self.x, self.y))
+	
+	def collectcheck(self, opponents):
+		if self.rect.colliderect(self.player.get_rect()):
+			self.collected = True
+			self.trigger_effect(opponents)
+
+	def trigger_effect(self, opponents):
+		if self.effect == "health":
+			self.player.health_points += 5
+		elif self.effect == "aoe":
+			for opp in opponents:
+				opp.getdamage(10)
+		elif self.effect == "revive":
+			self.player.health_points = self.player.max_health
+			self.player.maxhealth += 20
+
+class heal(collectible):
+	def __init__(self, x, y, player, manager):
+		script_dir = os.path.dirname(os.path.abspath(__file__))
+		image_path = os.path.join(script_dir, "heal.png")
+		super().__init__(x, y, image_path, effect="health", player=player, manager=manager)
+
+class aoe(collectible):
+	def __init__(self, x, y, player, manager):
+		script_dir = os.path.dirname(os.path.abspath(__file__))
+		image_path = os.path.join(script_dir, "aoe.png")
+		super().__init__(x, y, image_path, effect="aoe", player=player, manager=manager)
+
+class revive(collectible):
+	def __init__(self, x, y, player, manager):
+		script_dir = os.path.dirname(os.path.abspath(__file__))
+		image_path = os.path.join(script_dir, "revive.png")
+		super().__init__(x, y, image_path, effect="revive", player=player, manager=manager)
+
+class collectible_manager():
+	def __init__(self, player):
+		self.collectibles = []
+		self.player = player
+
+	def collectible_tick(self, screen, opponents):
+		for i in self.collectibles:
+			i.collectcheck(opponents)
+			if i.collected == False:
+				i.spawn(screen)
+			if i.collected == True:
+				self.collectibles.remove(i)
