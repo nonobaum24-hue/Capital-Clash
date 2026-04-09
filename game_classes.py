@@ -376,7 +376,7 @@ class super_opp(opponent):
 
 class mini_opp(opponent):
 	def __init__(self, x, y):
-		opponent.__init__(self, health_points=75)
+		opponent.__init__(self, health_points=60)
 		self.x = x
 		self.y = y
 		self.speed = 4 + uniform(-0.5, 0.5)

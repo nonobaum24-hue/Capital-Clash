@@ -45,7 +45,7 @@ SCHEDULE = [
     {"type": super_opp,  "count": 2, "tick": 900},           # 45 s: 2 Super
 
     # Periodische Waves (interval = alle N Ticks)
-    {"type": mini_opp, "count": 1, "interval": 300,          # alle 5 s ein Mini
+    {"type": mini_opp, "count": 2, "interval": 300,          # alle 5 s ein Mini
      "start": 3600, "end": 0},
 ]
 
