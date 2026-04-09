@@ -37,57 +37,44 @@ running = True
 
 clock = pygame.time.Clock()
 
-opp1 = normal_opp(0, 0)
-opp2 = normal_opp(0, 0)
-opp3 = normal_opp(0, 0)
-opp4 = normal_opp(0, 0)
-opp5 = normal_opp(0, 0)
-super_opp1 = super_opp(0, 0)
-super_opp2 = super_opp(0, 0)
-opponentcache = [opp1, opp2, opp3, opp4, opp5, super_opp1, super_opp2]
-for i in range():
-	opponentcache.append(mini_opp[1](0, 0))
+SCHEDULE = [
+    # Einmalige Waves (tick = exakter Zeitpunkt)
+    {"type": normal_opp, "count": 2, "tick": 3600},          # Start: 2 Normal
+    {"type": normal_opp, "count": 1, "tick": 1800},          # 30 s: +1 Normal
+    {"type": normal_opp, "count": 2, "tick": 1500},          # 35 s: +2 Normal
+    {"type": super_opp,  "count": 2, "tick": 900},           # 45 s: 2 Super
+
+    # Periodische Waves (interval = alle N Ticks)
+    {"type": mini_opp, "count": 1, "interval": 300,          # alle 5 s ein Mini
+     "start": 3600, "end": 0},
+]
+
+spawn_manager = SpawnManager(SCHEDULE)
 opponents = []
 
-# Für jeden Gegner eine Healthbar erstellen (follow=True hält sie über dem Kopf)
-opp_bars = [health_bar(-40, 0, 60, 7, opp, follow=True) for opp in opponentcache]
 roundtick = 3600 # 60 Sekunden bei 60 FPS
 
 
 while running:
+	# ── Spawning ──────────────────────────────────────────────────────
+	newly_spawned = spawn_manager.tick(roundtick, marx_char)
+	opponents.extend(newly_spawned)
 
-	# Gegner spawnen zu bestimmten Zeiten, Position wird intern von Gegnern verwaltet, damit sie nicht direkt neben dem Spieler spawnen
-	if roundtick == 3600: # Gegner 1 spawnt nach 0 Sekunden
-		opp1.set_position_out_of_range_of_player(marx_char)
-		opp2.set_position_out_of_range_of_player(marx_char)
-		opponents = opponents + [opp1, opp2]
-	elif roundtick == 1800: # Gegner 3 spawnt nach 30 Sekunden
-		opp3.set_position_out_of_range_of_player(marx_char)
-		opponents = opponents + [opp3]
-	elif roundtick == 1800 - 5*60: # Gegner 4 und 5 spawnen nach 35 Sekunden
-		opp4.set_position_out_of_range_of_player(marx_char)
-		opp5.set_position_out_of_range_of_player(marx_char)
-		opponents = opponents + [opp4, opp5]
-	elif roundtick == 900: # Super-Gegner spawnen nach 45 Sekunden
-		super_opp1.set_position_out_of_range_of_player(marx_char)
-		super_opp2.set_position_out_of_range_of_player(marx_char)
-		opponents = opponents + [super_opp1, super_opp2]
-	
 	roundtick -= 1
-	screen.fill((0,0,0))
-	
-	screen.blit(floor_img, (0, 0))
-	
-	# Steuerung
-	keys = pygame.key.get_pressed()
-	is_moving = keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_UP] or keys[pygame.K_DOWN]
-	
-	# Bewegung verwaltet marx intern
+
+	# ── Rendering & Logic ─────────────────────────────────────────────
+	screen.fill((0, 0, 0))
+	if floor_img:
+		screen.blit(floor_img, (0, 0))
+
+	keys      = pygame.key.get_pressed()
+	is_moving = any(keys[k] for k in (pygame.K_LEFT, pygame.K_RIGHT,
+								pygame.K_UP,   pygame.K_DOWN))
+
 	marx_char.input_monitoring(keys, marx_area, opponents)
 	marx_char.tick_animation(is_moving)
 
-	# Update & Draw
-	alive, position = marx_char.update()
+	alive, _ = marx_char.update()
 	marx_area.drawrect(screen)
 	marx_char.draw(screen)
 	dmg_scr.draw(screen)
@@ -98,18 +85,16 @@ while running:
 		opp.checkcollision(marx_char, dmg_scr)
 		opp.draw(screen)
 
-	# Healthbars der lebenden Gegner zeichnen
-	for bar in opp_bars:
+	for bar in spawn_manager.opp_bars:
 		if bar.object.alive and bar.object in opponents:
 			bar.draw(screen)
 
-	
-	alive_opponents = [opp for opp in opponents if opp.update()]
-	opp_bars = [bar for bar in opp_bars if bar.object.alive]
-	opponents = alive_opponents
+	# ── Cleanup ───────────────────────────────────────────────────────
+	opponents = [o for o in opponents if o.alive]
+	spawn_manager.cleanup()
 
 	marx_bar.draw(screen)
-
+	
 	if not alive:
 		print("Marx ist tot!")
 		running = False

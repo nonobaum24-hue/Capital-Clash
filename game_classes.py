@@ -390,3 +390,60 @@ class mini_opp(opponent):
 		self.image2 = load_image(mini_opp2_path, scale=0.15)
 		self.image = self.image1
 		self.rect = self.image.get_rect(topleft=(self.x, self.y))
+
+class SpawnManager:
+    """
+    Verwaltet das Spawnen von Gegnern anhand eines Plans (SCHEDULE).
+
+    Jeder Eintrag im Schedule ist ein dict mit:
+      - "type"     : Klasse des Gegners (normal_opp, mini_opp, super_opp, BOSS_opp)
+      - "count"    : Anzahl der Gegner pro Spawn
+      - "tick"     : (optional) einmaliger Spawn bei genau diesem Tick
+      - "interval" : (optional) periodischer Spawn alle N Ticks
+      - "start"    : (optional, nur mit interval) ab welchem Tick gestartet wird (Standard: 0)
+      - "end"      : (optional, nur mit interval) bis zu welchem Tick gespawnt wird
+    """
+    def __init__(self, schedule: list[dict]):
+        self.schedule = schedule
+        self.all_opponents = []   # alle je gespawnten Gegner
+        self.opp_bars = []        # zugehörige Healthbars
+
+    def tick(self, current_tick: int, player) -> list:
+        """
+        Gibt die neu gespawnten Gegner dieses Ticks zurück
+        und fügt sie intern zur Gesamtliste hinzu.
+        """
+        newly_spawned = []
+
+        for entry in self.schedule:
+            opp_type  = entry["type"]
+            count     = entry.get("count", 1)
+            should_spawn = False
+
+            if "tick" in entry and entry["tick"] == current_tick:
+                should_spawn = True
+
+            elif "interval" in entry:
+                start = entry.get("start", 0)
+                end   = entry.get("end", float("inf"))
+                if start >= current_tick >= end:   # Tick zählt runter, daher >=
+                    interval = entry["interval"]
+                    if (current_tick - start) % interval == 0:
+                        should_spawn = True
+
+            if should_spawn:
+                for _ in range(count):
+                    new_opp = opp_type(0, 0)
+                    new_opp.set_position_out_of_range_of_player(player)
+                    newly_spawned.append(new_opp)
+                    self.opp_bars.append(
+                        health_bar(-40, 0, 60, 7, new_opp, follow=True)
+                    )
+
+        self.all_opponents.extend(newly_spawned)
+        return newly_spawned
+
+    def cleanup(self):
+        """Tote Gegner und ihre Healthbars entfernen."""
+        self.all_opponents = [o for o in self.all_opponents if o.alive]
+        self.opp_bars      = [b for b in self.opp_bars      if b.object.alive]
