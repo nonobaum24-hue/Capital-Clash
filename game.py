@@ -38,6 +38,8 @@ SCHEDULE = [
 	# Periodische Waves  (interval = alle N Ticks, start/end begrenzen den Zeitraum)
 	{"type": mini_opp, "count": 2, "interval": 300,   # alle 5 s: 2× Mini (gesamte Runde)
 	 "start": 3600, "end": 0},
+	{"type": mini_opp, "count": 1, "interval": 300,
+  	 "start": 0,}    #nach Rundenende weiter
 ]
 
 spawn_manager = SpawnManager(SCHEDULE)
