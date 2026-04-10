@@ -687,7 +687,7 @@ class collectible:
 			self.player.heal(15)
 		elif self.effect == "aoe":
 			for opp in opponents:
-				opp.getdamage(25)
+				opp.getdamage(30)
 		elif self.effect == "revive":
 			self.player.max_health    += 10                      # Max-HP dauerhaft erhöhen
 			self.player.health_points  = self.player.max_health  # HP voll auffüllen

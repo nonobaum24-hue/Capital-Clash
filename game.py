@@ -44,7 +44,7 @@ except Exception as e:
 marx_char = marx(width // 2, height // 2, marx_path, marx_path2)
 
 # Lebensanzeige von Marx: rechts oben, 200px breit, 20px hoch
-marx_bar  = health_bar(width - 220, 20, 200, 20, marx_char)
+marx_bar  = health_bar(width//2 - 100, 20, 200, 20, marx_char)
 
 # Angriffsbereich-Visualisierung (Kreis um Marx)
 marx_area = damage_area(marx_char)
