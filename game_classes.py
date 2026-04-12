@@ -723,7 +723,7 @@ _COLLECTIBLE_MAP = {
 # CollectibleManager
 # ─────────────────────────────────────────────────────────────────────────────
 
-class CollectibleManager:
+class collectible_manager:
 	"""
 	Verwaltet alle aktiven Collectibles auf dem Spielfeld.
 
