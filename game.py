@@ -1,6 +1,6 @@
 import os
 import pygame
-from game_classes import *   # alle Klassen aus game_classes.py importieren
+from game_classes import marx, health_bar, damage_area, damage_screen, SpawnManager, collectible_manager, normal_opp, super_opp, mini_opp
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Grundeinstellungen
