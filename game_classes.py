@@ -40,7 +40,7 @@ def load_image(path, scale=0.25):
 # Spieler-Klasse
 # ─────────────────────────────────────────────────────────────────────────────
 
-class Marx:
+class marx:
 	"""
 	Repräsentiert den Spielercharakter Marx.
 	Kümmert sich um Bewegung, Angriff, Schadensnahme, Heilung und Animation.
@@ -780,18 +780,3 @@ class CollectibleManager:
 		dead_ids = {id(o) for o in opponents if not o.alive}
 		if not dead_ids:
 			self._dropped.clear()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Rückwärtskompatible Aliase
-# (damit game.py ohne Änderungen weiter funktioniert)
-# ─────────────────────────────────────────────────────────────────────────────
-
-marx             = Marx
-damage_area      = DamageArea
-damage_screen    = DamageScreen
-health_bar       = HealthBar
-normal_opp       = NormalOpp
-super_opp        = SuperOpp
-mini_opp         = MiniOpp
-collectible_manager = CollectibleManager
