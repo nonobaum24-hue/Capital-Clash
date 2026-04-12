@@ -215,7 +215,7 @@ class marx:
 # Kampf-Hilfsobjekte
 # ─────────────────────────────────────────────────────────────────────────────
 
-class DamageArea:
+class damage_area:
 	"""
 	Sichtbarer Angriffsbereich um Marx (halbtransparenter Kreis).
 	Wird rot während des Cooldowns und weiß wenn Marx angreifen kann.
@@ -267,7 +267,7 @@ class DamageArea:
 		self.color = (255, 255, 255, 125)
 
 
-class DamageScreen:
+class damage_screen:
 	"""
 	Roter Bildschirm-Overlay-Effekt wenn Marx Schaden nimmt.
 	Erscheint sofort und klingt sanft über 'duration' Frames ab.
@@ -295,7 +295,7 @@ class DamageScreen:
 		screen.blit(surf, (0, 0))
 
 
-class HealthBar:
+class health_bar:
 	"""
 	Lebensanzeige für beliebige Objekte (Marx oder Gegner).
 	Zeigt den aktuellen HP-Anteil als grünen Balken auf rotem Hintergrund.
@@ -341,7 +341,7 @@ class HealthBar:
 # Gegner-Basisklasse
 # ─────────────────────────────────────────────────────────────────────────────
 
-class Opponent:
+class opponent:
 	"""
 	Abstrakte Basisklasse für alle Gegnertypen.
 	Enthält gemeinsame Logik: Bewegung, Schadennahme, Kollision, Animation.
@@ -497,7 +497,7 @@ class Opponent:
 # Gegner-Unterklassen
 # ─────────────────────────────────────────────────────────────────────────────
 
-class NormalOpp(Opponent):
+class normal_opp(opponent):
 	"""
 	Standardgegner. Mittlere HP, mittlere Geschwindigkeit.
 	Droppt beim Tod mit 70% Chance ein AOE-Collectible.
@@ -518,7 +518,7 @@ class NormalOpp(Opponent):
 		self.collectible_chance = 70      # 70% Dropchance
 
 
-class SuperOpp(Opponent):
+class super_opp(opponent):
 	"""
 	Starker Gegner. Hohe HP, langsam, hoher Schaden.
 	Droppt beim Tod mit 90% Chance ein Revive-Collectible (heilt auf Max + erhöht Max-HP).
@@ -540,7 +540,7 @@ class SuperOpp(Opponent):
 		self.collectible_chance = 90
 
 
-class MiniOpp(Opponent):
+class mini_opp(opponent):
 	"""
 	Kleiner, schneller Gegner mit wenig HP und geringem Schaden.
 	Spawnt periodisch in Wellen. Droppt mit 30% Chance ein Heal-Collectible.
@@ -623,7 +623,7 @@ class SpawnManager:
 					new_opp.set_position_out_of_range_of_player(player)
 					newly_spawned.append(new_opp)
 					# Healthbar direkt miterstellen; follow=True → schwebt über Gegner
-					self.opp_bars.append(HealthBar(-40, 0, 60, 7, new_opp, follow=True))
+					self.opp_bars.append(health_bar(-40, 0, 60, 7, new_opp, follow=True))
 
 		self.all_opponents.extend(newly_spawned)
 		return newly_spawned
