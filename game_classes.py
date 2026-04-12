@@ -3,6 +3,12 @@ import pygame
 from random import randint, uniform
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Modul-Konstante
+# ─────────────────────────────────────────────────────────────────────────────
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Bild-Cache
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -16,7 +22,7 @@ def load_image(path, scale=0.25):
 	Lädt ein Bild von der Festplatte, skaliert es und gibt es zurück.
 	Wurde dasselbe Bild (gleicher Pfad + gleiche Scale) schon einmal geladen,
 	kommt es direkt aus dem Cache — kein doppeltes Laden nötig.
-	
+
 	Für diese Funktion wurde KI verwendet, da ich an der Performance und Fehlerlosigkeit verzwifelt bin.
 	"""
 	key = (os.path.abspath(path), float(scale))
@@ -34,7 +40,7 @@ def load_image(path, scale=0.25):
 # Spieler-Klasse
 # ─────────────────────────────────────────────────────────────────────────────
 
-class marx:
+class Marx:
 	"""
 	Repräsentiert den Spielercharakter Marx.
 	Kümmert sich um Bewegung, Angriff, Schadensnahme, Heilung und Animation.
@@ -62,7 +68,7 @@ class marx:
 		# Radius um Marx herum, in dem keine Gegner spawnen dürfen
 		self.exception_radius = 150
 
-		# Bildschirmgrenzen für die Bewegungsbegrenzung
+		# Bildschirmgrenzen für die Bewegungsbegrenzung und Spawn-Logik
 		self.screen_w = screen_w
 		self.screen_h = screen_h
 
@@ -144,7 +150,7 @@ class marx:
 		"""
 		Verarbeitet Tastatureingaben für Bewegung und Angriff.
 		  keys      – aktueller Tastaturzustand (pygame.key.get_pressed())
-		  area      – damage_area-Objekt, das den Angriffsbereich visualisiert
+		  area      – DamageArea-Objekt, das den Angriffsbereich visualisiert
 		  opponents – Liste aktiver Gegner (für Kollisionsprüfung beim Angriff)
 		"""
 		# Bewegung mit Pfeiltasten (5 Pixel pro Frame)
@@ -191,7 +197,7 @@ class marx:
 			self.health_points = min(self.max_health, self.health_points + amount)
 
 	def gethealth(self):
-		"""Gibt die aktuellen Lebenspunkte zurück (wird von health_bar genutzt)."""
+		"""Gibt die aktuellen Lebenspunkte zurück (wird von HealthBar genutzt)."""
 		return self.health_points
 
 	def get_exception_area(self):
@@ -209,7 +215,7 @@ class marx:
 # Kampf-Hilfsobjekte
 # ─────────────────────────────────────────────────────────────────────────────
 
-class damage_area:
+class DamageArea:
 	"""
 	Sichtbarer Angriffsbereich um Marx (halbtransparenter Kreis).
 	Wird rot während des Cooldowns und weiß wenn Marx angreifen kann.
@@ -261,37 +267,35 @@ class damage_area:
 		self.color = (255, 255, 255, 125)
 
 
-class damage_screen:
+class DamageScreen:
 	"""
 	Roter Bildschirm-Overlay-Effekt wenn Marx Schaden nimmt.
-	Erscheint sofort und klingt über 'duration' Frames ab.
+	Erscheint sofort und klingt sanft über 'duration' Frames ab.
 	"""
 
 	def __init__(self):
-		self.color    = (255, 0, 0, 0)   # Alpha 0 = unsichtbar (Ausgangszustand)
-		self.duration = 20               # Effekt dauert 20 Frames (~0,33 Sek bei 60 FPS)
-		self.counter  = 0                # Zählt runter bis Effekt endet
+		self.duration = 20   # Effekt dauert 20 Frames (~0,33 Sek bei 60 FPS)
+		self.counter  = 0    # Zählt runter bis Effekt endet
 
 	def trigger(self):
-		"""Startet den Effekt (wird von marx.get_damage() aufgerufen)."""
-		self.color   = (255, 0, 0, 80)  # Rot mit Alpha 80 (halbtransparent)
+		"""Startet den Effekt (wird von Marx.get_damage() aufgerufen)."""
 		self.counter = self.duration
 
 	def draw(self, screen):
 		"""
 		Zeichnet den Overlay über den gesamten Screen.
-		Muss jeden Frame aufgerufen werden; blendet automatisch aus.
+		Muss jeden Frame aufgerufen werden; blendet sanft aus (Fade-out).
 		"""
 		if self.counter > 0:
 			self.counter -= 1
-		else:
-			self.color = (255, 0, 0, 0)  # Effekt beendet → unsichtbar
+		# Alpha proportional zum verbleibenden Counter → sanfter Fade-out
+		alpha = int(80 * self.counter / self.duration)
 		surf = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-		surf.fill(self.color)
+		surf.fill((255, 0, 0, alpha))
 		screen.blit(surf, (0, 0))
 
 
-class health_bar:
+class HealthBar:
 	"""
 	Lebensanzeige für beliebige Objekte (Marx oder Gegner).
 	Zeigt den aktuellen HP-Anteil als grünen Balken auf rotem Hintergrund.
@@ -337,11 +341,11 @@ class health_bar:
 # Gegner-Basisklasse
 # ─────────────────────────────────────────────────────────────────────────────
 
-class opponent:
+class Opponent:
 	"""
 	Abstrakte Basisklasse für alle Gegnertypen.
 	Enthält gemeinsame Logik: Bewegung, Schadennahme, Kollision, Animation.
-	Konkrete Typen (normal_opp, super_opp, mini_opp) erben von hier
+	Konkrete Typen (NormalOpp, SuperOpp, MiniOpp) erben von hier
 	und setzen typspezifische Werte (HP, Speed, Sprites, Drop-Typ).
 	"""
 
@@ -349,7 +353,6 @@ class opponent:
 		self.alive          = True
 		self.isfirst_skin   = False          # Welcher der zwei Animationsframes aktiv ist
 		self.health_points  = health_points
-		self.is_moving      = True           # Für die Animations-Logik
 		self.damagecooldown = 0              # Verhindert dass Berührungsschaden jedes Frame auslöst
 		self.tick           = 0             # Frame-Zähler für Animation
 
@@ -383,14 +386,14 @@ class opponent:
 	def getdamage(self, damage):
 		"""
 		Zieht Schaden ab. Fällt HP auf 0 oder darunter → alive = False.
-		Der Drop-Spawn passiert extern im collectible_manager (nicht hier).
+		Der Drop-Spawn passiert extern im CollectibleManager (nicht hier).
 		"""
 		self.health_points -= damage
 		if self.health_points <= 0:
 			self.alive = False
 
 	def gethealth(self):
-		"""Gibt aktuelle HP zurück (wird von health_bar genutzt)."""
+		"""Gibt aktuelle HP zurück (wird von HealthBar genutzt)."""
 		return self.health_points
 
 	def move(self, dx, dy):
@@ -398,7 +401,6 @@ class opponent:
 		self.x += dx
 		self.y += dy
 		self.rect.topleft = (self.x, self.y)
-		self.is_moving = True
 
 	def draw(self, screen):
 		"""Zeichnet den Gegner (nur wenn lebendig)."""
@@ -448,23 +450,23 @@ class opponent:
 		"""Gibt zurück ob der Gegner noch am Leben ist."""
 		return self.alive
 
-	def getplayerposition(self, player):
-		"""Hilfsmethode: gibt (x, y) des Spielers zurück."""
-		return player.x, player.y
-
 	def set_position_out_of_range_of_player(self, player):
 		"""
 		Setzt die Spawn-Position zufällig, aber außerhalb des exception_radius
 		von Marx. Verhindert Spawn direkt neben dem Spieler.
 		X und Y werden unabhängig voneinander per while-Schleife gewürfelt.
+		Nutzt die Bildschirmgröße des Spielers statt hardcodierter Werte.
 		"""
 		ex0, ex1, ey0, ey1 = player.get_exception_area()
-		while True:
-			self.x = randint(0, 1250 - self.rect.width)
+		screen_w = player.screen_w
+		screen_h = player.screen_h
+
+		for _ in range(1000):  # Sicherheitslimit gegen theoretische Endlosschleife
+			self.x = randint(0, screen_w - self.rect.width)
 			if self.x < ex0 or self.x > ex1:
 				break
-		while True:
-			self.y = randint(0, 720 - self.rect.height)
+		for _ in range(1000):
+			self.y = randint(0, screen_h - self.rect.height)
 			if self.y < ey0 or self.y > ey1:
 				break
 		self.rect.topleft = (self.x, self.y)
@@ -472,10 +474,12 @@ class opponent:
 	def animation(self):
 		"""
 		Schaltet alle 15 Frames zwischen image1 und image2 um (Lauf-Animation).
-		Steht der Gegner still, bleibt image1 (Idle) aktiv.
+		Steht der Gegner still (vx und vy nahe 0), bleibt image1 (Idle) aktiv.
 		"""
+		is_moving = abs(self.vx) > 0.1 or abs(self.vy) > 0.1
+
 		self.tick += 1
-		if self.tick >= 15 and self.is_moving and self.alive:
+		if self.tick >= 15 and is_moving and self.alive:
 			if not self.isfirst_skin:
 				self.skinchange(self.image1)
 				self.isfirst_skin = True
@@ -483,7 +487,7 @@ class opponent:
 				self.skinchange(self.image2)
 				self.isfirst_skin = False
 			self.tick = 0
-		elif not self.is_moving and self.alive:
+		elif not is_moving and self.alive:
 			self.skinchange(self.image1)
 			self.isfirst_skin = True
 			self.tick = 0
@@ -493,7 +497,7 @@ class opponent:
 # Gegner-Unterklassen
 # ─────────────────────────────────────────────────────────────────────────────
 
-class normal_opp(opponent):
+class NormalOpp(Opponent):
 	"""
 	Standardgegner. Mittlere HP, mittlere Geschwindigkeit.
 	Droppt beim Tod mit 70% Chance ein AOE-Collectible.
@@ -505,9 +509,8 @@ class normal_opp(opponent):
 		self.speed  = 3 + uniform(-0.5, 0.5)  # leichte Zufallsvariation
 		self.damage = 15
 
-		script_dir  = os.path.dirname(os.path.abspath(__file__))
-		self.image1 = load_image(os.path.join(script_dir, "normal_opp1.png"), scale=0.28)
-		self.image2 = load_image(os.path.join(script_dir, "normal_opp2.png"), scale=0.28)
+		self.image1 = load_image(os.path.join(SCRIPT_DIR, "normal_opp1.png"), scale=0.28)
+		self.image2 = load_image(os.path.join(SCRIPT_DIR, "normal_opp2.png"), scale=0.28)
 		self.image  = self.image1
 		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
@@ -515,7 +518,7 @@ class normal_opp(opponent):
 		self.collectible_chance = 70      # 70% Dropchance
 
 
-class super_opp(opponent):
+class SuperOpp(Opponent):
 	"""
 	Starker Gegner. Hohe HP, langsam, hoher Schaden.
 	Droppt beim Tod mit 90% Chance ein Revive-Collectible (heilt auf Max + erhöht Max-HP).
@@ -528,9 +531,8 @@ class super_opp(opponent):
 		self.speed  = 2 + uniform(-0.5, 0.5)
 		self.damage = 25
 
-		script_dir  = os.path.dirname(os.path.abspath(__file__))
-		self.image1 = load_image(os.path.join(script_dir, "super_opp1.png"), scale=1)
-		self.image2 = load_image(os.path.join(script_dir, "super_opp2.png"), scale=1)
+		self.image1 = load_image(os.path.join(SCRIPT_DIR, "super_opp1.png"), scale=1)
+		self.image2 = load_image(os.path.join(SCRIPT_DIR, "super_opp2.png"), scale=1)
 		self.image  = self.image1
 		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
@@ -538,7 +540,7 @@ class super_opp(opponent):
 		self.collectible_chance = 90
 
 
-class mini_opp(opponent):
+class MiniOpp(Opponent):
 	"""
 	Kleiner, schneller Gegner mit wenig HP und geringem Schaden.
 	Spawnt periodisch in Wellen. Droppt mit 30% Chance ein Heal-Collectible.
@@ -550,9 +552,8 @@ class mini_opp(opponent):
 		self.speed  = 4 + uniform(-0.5, 0.5)
 		self.damage = 5
 
-		script_dir  = os.path.dirname(os.path.abspath(__file__))
-		self.image1 = load_image(os.path.join(script_dir, "mini_opp1.png"), scale=0.09)
-		self.image2 = load_image(os.path.join(script_dir, "mini_opp2.png"), scale=0.09)
+		self.image1 = load_image(os.path.join(SCRIPT_DIR, "mini_opp1.png"), scale=0.09)
+		self.image2 = load_image(os.path.join(SCRIPT_DIR, "mini_opp2.png"), scale=0.09)
 		self.image  = self.image1
 		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
@@ -573,7 +574,7 @@ class SpawnManager:
 	ob eine Welle fällig ist und spawnt sie dann automatisch.
 
 	SCHEDULE-Format (jeder Eintrag ist ein dict):
-	  "type"     → Gegnerklasse (normal_opp, mini_opp, super_opp …)
+	  "type"     → Gegnerklasse (NormalOpp, MiniOpp, SuperOpp …)
 	  "count"    → Anzahl Gegner pro Spawn (Standard: 1)
 	  "tick"     → einmaliger Spawn wenn roundtick == dieser Wert
 	  "interval" → periodischer Spawn alle N Ticks (alternativ zu "tick")
@@ -622,7 +623,7 @@ class SpawnManager:
 					new_opp.set_position_out_of_range_of_player(player)
 					newly_spawned.append(new_opp)
 					# Healthbar direkt miterstellen; follow=True → schwebt über Gegner
-					self.opp_bars.append(health_bar(-40, 0, 60, 7, new_opp, follow=True))
+					self.opp_bars.append(HealthBar(-40, 0, 60, 7, new_opp, follow=True))
 
 		self.all_opponents.extend(newly_spawned)
 		return newly_spawned
@@ -640,9 +641,9 @@ class SpawnManager:
 # Collectibles
 # ─────────────────────────────────────────────────────────────────────────────
 
-class collectible:
+class Collectible:
 	"""
-	Basisklasse für alle aufsammelbare Gegenstände.
+	Basisklasse für alle aufsammelbaren Gegenstände.
 	Erscheint auf dem Boden wenn ein Gegner stirbt; Marx läuft drüber → Effekt.
 	"""
 
@@ -679,8 +680,8 @@ class collectible:
 	def trigger_effect(self, opponents):
 		"""
 		Führt den Effekt des Collectibles aus:
-		  health → heilt Marx um 25 HP (gecappt auf max_health)
-		  aoe    → fügt ALLEN aktiven Gegnern 10 Schaden zu
+		  health → heilt Marx um 15 HP (gecappt auf max_health)
+		  aoe    → fügt ALLEN aktiven Gegnern 30 Schaden zu
 		  revive → erhöht Max-HP um 10 und füllt HP komplett auf
 		"""
 		if self.effect == "health":
@@ -693,39 +694,36 @@ class collectible:
 			self.player.health_points  = self.player.max_health  # HP voll auffüllen
 
 
-class heal(collectible):
-	"""Heilt Marx um 15 HP. Wird von mini_opp gedroppt."""
+class Heal(Collectible):
+	"""Heilt Marx um 15 HP. Wird von MiniOpp gedroppt."""
 	def __init__(self, x, y, player):
-		script_dir = os.path.dirname(os.path.abspath(__file__))
-		super().__init__(x, y, os.path.join(script_dir, "heal.png"), "health", player)
+		super().__init__(x, y, os.path.join(SCRIPT_DIR, "heal.png"), "health", player)
 
-class aoe(collectible):
-	"""Fügt allen Gegnern auf dem Bildschirm 25 Schaden zu. Wird von normal_opp gedroppt."""
+class Aoe(Collectible):
+	"""Fügt allen Gegnern auf dem Bildschirm 30 Schaden zu. Wird von NormalOpp gedroppt."""
 	def __init__(self, x, y, player):
-		script_dir = os.path.dirname(os.path.abspath(__file__))
-		super().__init__(x, y, os.path.join(script_dir, "aoe.png"), "aoe", player)
+		super().__init__(x, y, os.path.join(SCRIPT_DIR, "aoe.png"), "aoe", player)
 
-class revive(collectible):
-	"""Füllt HP komplett auf und erhöht Max-HP um 10. Wird von super_opp gedroppt."""
+class Revive(Collectible):
+	"""Füllt HP komplett auf und erhöht Max-HP um 10. Wird von SuperOpp gedroppt."""
 	def __init__(self, x, y, player):
-		script_dir = os.path.dirname(os.path.abspath(__file__))
-		super().__init__(x, y, os.path.join(script_dir, "revive.png"), "revive", player)
+		super().__init__(x, y, os.path.join(SCRIPT_DIR, "revive.png"), "revive", player)
 
 
 # Lookup-Tabelle: Drop-String aus Gegner-Klasse → Collectible-Klasse
-# Wird im collectible_manager genutzt um den richtigen Typ zu instanziieren.
+# Wird im CollectibleManager genutzt um den richtigen Typ zu instanziieren.
 _COLLECTIBLE_MAP = {
-	"heal":   heal,
-	"aoe":    aoe,
-	"revive": revive,
+	"heal":   Heal,
+	"aoe":    Aoe,
+	"revive": Revive,
 }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# collectible_manager
+# CollectibleManager
 # ─────────────────────────────────────────────────────────────────────────────
 
-class collectible_manager:
+class CollectibleManager:
 	"""
 	Verwaltet alle aktiven Collectibles auf dem Spielfeld.
 
@@ -775,3 +773,25 @@ class collectible_manager:
 				c.spawn(screen)         # nur zeichnen wenn noch nicht aufgesammelt
 				active.append(c)        # und in der aktiven Liste behalten
 		self.collectibles = active      # aufgesammelte sind jetzt raus
+
+		# _dropped-Set gelegentlich bereinigen um Speicher zu sparen.
+		# Da Python object-ids wiederverwendet werden können, erst leeren
+		# wenn keine Gegner mehr tot auf dem Feld liegen.
+		dead_ids = {id(o) for o in opponents if not o.alive}
+		if not dead_ids:
+			self._dropped.clear()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Rückwärtskompatible Aliase
+# (damit game.py ohne Änderungen weiter funktioniert)
+# ─────────────────────────────────────────────────────────────────────────────
+
+marx             = Marx
+damage_area      = DamageArea
+damage_screen    = DamageScreen
+health_bar       = HealthBar
+normal_opp       = NormalOpp
+super_opp        = SuperOpp
+mini_opp         = MiniOpp
+collectible_manager = CollectibleManager
