@@ -780,3 +780,72 @@ class collectible_manager:
 		dead_ids = {id(o) for o in opponents if not o.alive}
 		if not dead_ids:
 			self._dropped.clear()
+
+class boss_opp:
+	def __init__(self):
+		self.health_points = 1000
+		self.punch_damage = 40
+		self.projectile_damage = 20
+		self.alive = True
+		self.phase = 1
+		self.duration = 0 
+		self.lifelong_tick = 0 #counter für die gesamte Lebenszeit des Bosses
+		
+		self.image = load_image(os.path.join(SCRIPT_DIR, "boss_opp.png"), scale=0.5)
+		self.rect = self.image.get_rect(topleft=(500, 200))
+
+		width = 1250
+		height = 720
+		self.position = (width // 2, height - self.rect.height)
+
+	def draw(self, screen):
+		if self.alive:
+			screen.blit(self.image, self.position)
+	
+	def get_rect(self):
+		return self.rect.move(self.position)
+	
+	def get_center_position(self):
+		return (self.position[0] + self.rect.width // 2, self.position[1] + self.rect.height // 2)
+	
+	def getdamage(self, damage):
+		self.health_points -= damage
+		if self.health_points <= 0:
+			self.alive = False
+
+	def get_distance_to_player(self, player):
+		boss_center = (self.position[0] + self.rect.width // 2, self.position[1] + self.rect.height // 2)
+		player_center = (player.x + player.rect.width // 2, player.y + player.rect.height // 2)
+		dx = boss_center[0] - player_center[0]
+		dy = boss_center[1] - player_center[1]
+		return (dx**2 + dy**2) ** 0.5
+
+	def tick(self, player, projectiles , punch_area): #projectiles in progress
+		self.lifelong_tick += 1
+		if self.get_distance_to_player(player) < 100:
+			punch_area.activate(player, 1, self.punch_damage)
+			
+
+class punch_area:
+	def __init__(self, boss):
+		self.boss = boss
+		self.active = False
+		self.tick_count = 0
+
+	def activate(self, player, delay, damage):
+		self.damage = damage
+		self.active = True
+		self.tick_count = delay * 60  # Umrechnung von Sekunden in Frames (bei 60 FPS)
+		if self.tick_count > 0:
+			self.tick_count -= 1
+		else:
+			if player.get_rect().colliderect(self.get_rect()):
+				player.get_damage(self.damage)
+			self.active = False
+
+	def draw(self, screen):
+		self.center = self.boss.get_center_position()
+		if self.active:
+			pygame.draw.circle(screen, (255, 0, 0), self.center, 50, 5)
+		else:
+			pygame.draw.circle(screen, (255, 255, 255), self.center, 50, 5)
