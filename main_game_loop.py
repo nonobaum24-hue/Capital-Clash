@@ -169,7 +169,7 @@ while running:
 	pygame.display.flip()   # fertigen Frame auf den Bildschirm bringen
 	clock.tick(60)          # maximal 60 FPS (hält Spielgeschwindigkeit konstant)
 
-	if roundtick >= 0 and not opponents:
+	if roundtick <= 0 and not opponents:
 		running = False
 
 # ─────────────────────────────────────────────────────────────────────────────
