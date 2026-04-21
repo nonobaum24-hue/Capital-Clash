@@ -221,8 +221,8 @@ class boss_opp:
         """
         # -- Punch animation takes highest priority ----------------------------
         if self._punch_active:
-            # 3 sprites spread over 45 frames (15 frames per sprite)
-            frame_idx  = min(2, self._punch_tick // 15)
+            # 3 sprites spread over 60 frames (20 frames per sprite)
+            frame_idx  = min(2, self._punch_tick // 20)
             self.image = self.anim_punch[frame_idx]
             return
 
