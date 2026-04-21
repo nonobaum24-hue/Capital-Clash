@@ -96,8 +96,8 @@ class boss_opp:
         # Cast animation: 2 frames; played over 30 ticks (15 ticks per frame)
         # Only used in Phase 2 when firing a projectile
         self.anim_cast = [
-            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_1.png"), scale=0.5),
-            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_2.png"), scale=0.5),
+            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_1.png"), scale=2),
+            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_2.png"), scale=2),
         ]
 
         # Start with the idle sprite
