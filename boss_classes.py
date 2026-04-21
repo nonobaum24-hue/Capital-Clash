@@ -255,6 +255,8 @@ class boss_opp:
         """Decrement the punch cooldown counter by 1 each frame."""
         if self._punch_cd > 0:
             self._punch_cd -= 1
+        if self._punch_cd == 0 and not self._punch_active:
+            self.area.active = False   # ensure the punch_area is inactive when cooldown ends
 
     def _check_and_trigger_punch(self, player, punch_area):
         """
@@ -371,7 +373,7 @@ class boss_opp:
         self.follow_player(player)
 
         # 3. Melee punch system
-        self._update_punch_cooldown()
+        self._update_punch_cooldown(punch_area)
         self._check_and_trigger_punch(player, punch_area)
         self._update_punch_animation()
         punch_area.tick(player)   # tick punch_area so it counts down and deals damage
