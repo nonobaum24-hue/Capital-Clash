@@ -258,7 +258,7 @@ class marx:
                     in_range[randint(0, len(in_range) - 1)].getdamage(self.damage)
             elif opponents == 'BOSS':
                 if opponents.rect.colliderect(area.getrect()):
-                    opponents.getdamage(self.damage)
+                    opponents.getdamage(self.damage*2)  # Boss takes double damage from melee attacks
             # Start the cooldown: 30 frames = 0.5 seconds at 60 FPS
             self.attack_cooldown = 30
 
