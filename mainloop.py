@@ -205,4 +205,4 @@ def mainloop(screen):
         # End condition: timer expired AND no enemies remain on the field
         if roundtick <= 0 and not opponents:
             running = False
-            return True
+            return True, marx_char.health_points

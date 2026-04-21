@@ -30,7 +30,7 @@ print('erfolgreich gestartet')   # debug output – start menu finished
 # --- Phase 2: Main Game Loop ---
 # Runs until either the 60-second round ends with no enemies left (player
 # wins the round) or Marx's HP drops to 0 (player dies).
-alive = mainloop(screen)
+alive, health = mainloop(screen)
 
 print('jetzt würde boss kommen')   # debug output – main loop finished
 
@@ -38,7 +38,7 @@ print('jetzt würde boss kommen')   # debug output – main loop finished
 # Same screen is reused. The loop ends when BOSS.alive becomes False (player
 # wins) or marx.alive becomes False (player loses).
 if alive:
-    boss_fight(screen)
+    boss_fight(screen, health)
 
 # --- Shutdown ---
 # pygame.quit() must be called exactly once after all game phases are done.

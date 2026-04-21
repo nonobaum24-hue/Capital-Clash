@@ -14,7 +14,7 @@
 # Lose condition: marx.alive becomes False  →  player loses
 # =============================================================================
 
-def boss_fight(screen):
+def boss_fight(screen, marxhealth):
     import pygame
     import os
     from game_classes import marx, damage_area, damage_screen, health_bar
@@ -64,6 +64,7 @@ def boss_fight(screen):
 
     # Player character centred on screen
     marx_char = marx(width // 2, height // 2, marx_path, marx_path2)
+    marx_char.health_points = marxhealth
 
     # Marx HP bar: centred at top, 200 px wide, 20 px tall
     marx_bar  = health_bar(width//2 - 100, 20, 200, 20, marx_char)
