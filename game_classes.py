@@ -251,10 +251,14 @@ class marx:
         # Attack: SPACE bar, only when cooldown is 0
         if keys[pygame.K_SPACE] and self.attack_cooldown == 0:
             # Collect all enemies whose rect overlaps the attack circle rect
-            in_range = [o for o in opponents if o.rect.colliderect(area.getrect())]
+            if opponents == 'opponents':
+                in_range = [o for o in opponents if o.rect.colliderect(area.getrect())]
             if in_range:
                 # Pick one enemy at random to prevent always hitting the same target
                 in_range[randint(0, len(in_range) - 1)].getdamage(self.damage)
+            if opponents == 'BOSS':
+                if opponents.rect.colliderect(area.getrect()):
+                    opponents.getdamage(self.damage)
             # Start the cooldown: 30 frames = 0.5 seconds at 60 FPS
             self.attack_cooldown = 30
 
