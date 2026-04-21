@@ -74,19 +74,6 @@ def boss_fight(screen):
     # Red full-screen flash when Marx takes damage
     dmg_scr   = damage_screen()
 
-    # =========================================================================
-    # Setup: Spawn Infrastructure (no enemies in boss fight)
-    # =========================================================================
-
-    # Empty schedule: no regular enemy waves during the boss fight
-    SCHEDULE = {}
-    spawn_manager = SpawnManager(SCHEDULE)
-
-    # collectible_manager still works in case the boss drops items (expandable)
-    coll_manager  = collectible_manager(marx_char)
-
-    # Active regular-enemy list (stays empty, kept for API compatibility)
-    opponents     = []
 
     # Round timer (kept for API compatibility with SpawnManager)
     roundtick     = 3600
@@ -115,10 +102,6 @@ def boss_fight(screen):
     while running:
 
         # --- Step 1: Spawning (no-op for boss fight) -------------------------
-        # SpawnManager.tick() is called for API compatibility; with an empty
-        # schedule it returns an empty list every frame.
-        newly_spawned = spawn_manager.tick(roundtick, marx_char)
-        opponents.extend(newly_spawned)
         roundtick -= 1
 
         # --- Step 2: Draw Background -----------------------------------------
@@ -165,28 +148,6 @@ def boss_fight(screen):
 
         # Remove projectiles that have already exploded (alive = False)
         projectiles = [p for p in projectiles if p.alive]
-
-        # --- Regular enemies (none in boss fight, kept for extensibility) ---
-        for opp in opponents:
-            opp.followplayer(marx_char)            # move toward Marx
-            opp.animation()                        # run animation
-            opp.checkcollision(marx_char, dmg_scr) # contact damage
-            opp.draw(screen)                       # draw sprite
-
-        # Draw HP bars for any regular enemies (empty in this phase)
-        for bar in spawn_manager.opp_bars:
-            if bar.object.alive and bar.object in opponents:
-                bar.draw(screen)
-
-        # --- Step 6: Collectibles --------------------------------------------
-        # Must happen BEFORE cleanup so dead enemy data is still available
-        coll_manager.collectible_tick(screen, opponents)
-
-        # --- Step 7: Cleanup -------------------------------------------------
-        # Remove dead regular enemies from the active list
-        opponents = [o for o in opponents if o.alive]
-        # Sync the SpawnManager's internal records with the cleaned-up list
-        spawn_manager.cleanup()
 
         # --- Step 8: Draw HP Bars (drawn last to stay on top) ----------------
         marx_bar.draw(screen)      # Marx's HP bar (always shown)
