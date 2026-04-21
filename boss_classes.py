@@ -120,7 +120,7 @@ class boss_opp:
         self.rect     = self.image.get_rect(topleft=self.position)
 
         # ── Movement ─────────────────────────────────────────────────────────
-        self.speed = 1.5   # maximum pixels per frame toward Marx
+        self.speed = 1   # maximum pixels per frame toward Marx
         self.vx    = 0.0   # current horizontal velocity
         self.vy    = 0.0   # current vertical velocity
 
