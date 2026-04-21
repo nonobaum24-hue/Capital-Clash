@@ -253,10 +253,10 @@ class marx:
             # Collect all enemies whose rect overlaps the attack circle rect
             if opponents == 'opponents':
                 in_range = [o for o in opponents if o.rect.colliderect(area.getrect())]
-            if in_range:
-                # Pick one enemy at random to prevent always hitting the same target
-                in_range[randint(0, len(in_range) - 1)].getdamage(self.damage)
-            if opponents == 'BOSS':
+                if in_range:
+                    # Pick one enemy at random to prevent always hitting the same target
+                    in_range[randint(0, len(in_range) - 1)].getdamage(self.damage)
+            elif opponents == 'BOSS':
                 if opponents.rect.colliderect(area.getrect()):
                     opponents.getdamage(self.damage)
             # Start the cooldown: 30 frames = 0.5 seconds at 60 FPS
