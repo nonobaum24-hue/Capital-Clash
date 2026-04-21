@@ -189,12 +189,14 @@ def mainloop(screen):
         if not alive:
             print("Marx ist tot!")
             running = False   # exit the loop on the next iteration
+            return False
 
         # --- Step 10: Event Handling -----------------------------------------
         # Handle the window close button
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                return False
 
         # --- Step 11: Frame Cap and Display ----------------------------------
         pygame.display.flip()   # push the finished frame to the monitor
@@ -203,3 +205,4 @@ def mainloop(screen):
         # End condition: timer expired AND no enemies remain on the field
         if roundtick <= 0 and not opponents:
             running = False
+            return True
