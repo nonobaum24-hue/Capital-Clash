@@ -467,6 +467,8 @@ class punch_area:
             return (255, 0, 0, self.ALPHA)
 
         progress   = (1 - (self.tick_count / self.max_ticks)) / 1.33   # 0.0 → ~0.75
+        if not self.active:
+            progress = 0
         self.ALPHA = int(255 * progress)
         return (255, 0, 0, self.ALPHA)
 
