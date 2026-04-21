@@ -28,7 +28,7 @@ class boss_opp:
 		self.lifelong_tick  = 0   # Gesamtlebensdauer in Frames
 		self._punch_cd      = 0   # interner Cooldown-Zähler
 
-		self.image = load_image(os.path.join(SCRIPT_DIR, "boss_opp.png"), scale=0.5)
+		self.image = load_image(os.path.join(SCRIPT_DIR, "olaf/olaf_idle/olaf_idle.png"), scale=0.5)
 
 		# Position: horizontal zentriert, knapp über dem unteren Bildrand
 		width, height = 1250, 720

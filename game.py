@@ -1,4 +1,3 @@
-import os
 import pygame
 from mainloop import mainloop
 from boss_fight import boss_fight
