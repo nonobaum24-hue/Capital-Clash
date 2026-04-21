@@ -116,6 +116,7 @@ def mainloop(screen):
 
     # Round timer: 3600 frames = 60 seconds at 60 FPS; decrements every frame
     roundtick     = 3600
+    endtick = 60*7 #am Ende 7 Sekunden Zeit bevor Bossfight
 
     clock   = pygame.time.Clock()
     running = True
@@ -204,5 +205,9 @@ def mainloop(screen):
 
         # End condition: timer expired AND no enemies remain on the field
         if roundtick <= 0 and not opponents:
-            running = False
-            return True, marx_char.health_points
+            if endtick > 0:
+                endtick -= 1
+            elif endtick == 0:
+                running = False
+                return True, marx_char.health_points
+        
