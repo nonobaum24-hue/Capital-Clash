@@ -251,12 +251,14 @@ class marx:
         # Attack: SPACE bar, only when cooldown is 0
         if keys[pygame.K_SPACE] and self.attack_cooldown == 0:
             # Collect all enemies whose rect overlaps the attack circle rect
-            if opponents == 'opponents':
+            if isinstance(opponents, list):
+                # Fighting normal enemies (list of opp_classes instances)
                 in_range = [o for o in opponents if o.rect.colliderect(area.getrect())]
                 if in_range:
                     # Pick one enemy at random to prevent always hitting the same target
                     in_range[randint(0, len(in_range) - 1)].getdamage(self.damage)
-            elif opponents == 'BOSS':
+            else:
+                # Fighting the boss (boss_opp instance)
                 if opponents.rect.colliderect(area.getrect()):
                     opponents.getdamage(self.damage*2)  # Boss takes double damage from melee attacks
             # Start the cooldown: 30 frames = 0.5 seconds at 60 FPS
