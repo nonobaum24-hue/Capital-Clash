@@ -251,12 +251,12 @@ class boss_opp:
     # Punch System
     # =========================================================================
 
-    def _update_punch_cooldown(self):
+    def _update_punch_cooldown(self, punch_area):
         """Decrement the punch cooldown counter by 1 each frame."""
         if self._punch_cd > 0:
             self._punch_cd -= 1
         if self._punch_cd == 0 and not self._punch_active:
-            self.area.active = False   # ensure the punch_area is inactive when cooldown ends
+            punch_area.active = False   # ensure the punch_area is inactive when cooldown ends
 
     def _check_and_trigger_punch(self, player, punch_area):
         """
