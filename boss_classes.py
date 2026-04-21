@@ -75,29 +75,32 @@ class boss_opp:
         script_dir = SCRIPT_DIR
 
         # Idle animation: single frame shown when Olaf is standing still
+
+        self.scale = 2
+
         self.anim_idle = load_image(
             os.path.join(script_dir, "olaf", "idle_olaf", "idle_olaf.png"),
-            scale=0.5
+            scale=self.scale
         )
 
         # Walk animation: single frame shown when Olaf is moving
         self.anim_walk = load_image(
             os.path.join(script_dir, "olaf", "walk_olaf", "walk_olaf.png"),
-            scale=0.5
+            scale=self.scale
         )
 
         # Punch animation: 3 frames; played over 45 ticks (15 ticks per frame)
         self.anim_punch = [
-            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_1.png"), scale=0.5),
-            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_2.png"), scale=0.5),
-            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_3.png"), scale=0.5),
+            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_1.png"), scale=self.scale),
+            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_2.png"), scale=self.scale),
+            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_3.png"), scale=self.scale),
         ]
 
         # Cast animation: 2 frames; played over 30 ticks (15 ticks per frame)
         # Only used in Phase 2 when firing a projectile
         self.anim_cast = [
-            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_1.png"), scale=2),
-            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_2.png"), scale=2),
+            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_1.png"), scale=self.scale),
+            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_2.png"), scale=self.scale),
         ]
 
         # Start with the idle sprite
