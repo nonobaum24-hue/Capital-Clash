@@ -66,7 +66,7 @@ def mainloop(screen):
     marx_char = marx(width // 2, height // 2, marx_path, marx_path2)
 
     # Marx's HP bar: centred at top of screen, 200 px wide, 20 px tall
-    marx_bar  = health_bar(width//2 - 100, 20, 200, 20, marx_char)
+    marx_bar  = health_bar(width//2 - 100, height - 40, 200, 20, marx_char)
 
     # Attack circle drawn around Marx (visual + collision for attacks)
     marx_area = damage_area(marx_char)
