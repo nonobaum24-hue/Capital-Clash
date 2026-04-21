@@ -1,575 +1,641 @@
+# =============================================================================
+# boss_classes.py  –  Boss Enemy Classes
+# =============================================================================
+# Contains the three classes that make up the boss fight against Olaf:
+#
+#   boss_opp          – the boss character itself (movement, AI, phases, animations)
+#   punch_area        – melee attack circle around the boss (visual + hit detection)
+#   boss_projectile   – a projectile fired by the boss in Phase 2
+# =============================================================================
+
 from game_classes import load_image, SCRIPT_DIR
 import os
 import pygame
 from random import uniform
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Boss-Gegner-Klasse
-# ─────────────────────────────────────────────────────────────────────────────
+
+# =============================================================================
+# boss_opp  –  Boss Character (Olaf)
+# =============================================================================
 
 class boss_opp:
-	"""
-	Boss Olaf mit 1000 HP, komplexem Animations-System und zwei Phasen:
-	
-	Phase 1 (1000–501 HP):
-	  - Bewegungen auf Marx zu (idle/walk Animation mit Rotation)
-	  - Nahkampf-Angriffe (punch Animation)
-	  - Nur in Reichweite aktiv
-	
-	Phase 2 (500–0 HP):
-	  - Alle Phase-1-Fähigkeiten
-	  - PLUS: Projektil-Schüsse (cast Animation) in zufälligen Intervallen
-	  - Schnellere Reaktion und Angriffe werden häufiger
-	
-	Animationen:
-	  - idle: Standbild (passiv)
-	  - walk: Laufbild (aktiv bei Bewegung)
-	  - punch: 3-Frame-Angriff mit Timing
-	  - cast: 2-Frame-Übernatürlich-Effekt für Projektile (Phase 2)
-	"""
+    """
+    Boss Olaf with 1000 HP, a complex animation system, and two fight phases.
 
-	# ── Konstanten ─────────────────────────────────────────────────────────
+    Phase 1  (1000 – 501 HP):
+      - Moves toward Marx smoothly (idle / walk animation with rotation)
+      - Melee punch attacks (3-frame punch animation) when Marx is close
+      - No projectiles
 
-	PUNCH_RANGE         = 150   # Pixel Abstand unter dem Nahkampf ausgelöst wird
-	PUNCH_DELAY         = 60    # Frames Vorlaufzeit für den Punch (visuelles Feedback)
-	PUNCH_COOLDOWN      = 120   # Frames Pause zwischen zwei Punch-Auslösungen
-	
-	PHASE_2_THRESHOLD   = 500   # HP-Grenze für Phase 2 (50% von 1000)
-	CAST_COOLDOWN_BASE  = 180   # Frames zwischen Projektil-Angriffen in Phase 2 (3 Sek)
-	CAST_DELAY          = 40    # Frames Vorlaufzeit für Cast-Animation
+    Phase 2  (500 – 0 HP):
+      - All Phase 1 behaviour, PLUS:
+      - Fires projectiles (2-frame cast animation) on a cooldown
 
-	def __init__(self):
-		# ── Lebenspunkte & Schaden ────────────────────────────────────────
-		self.max_health        = 1000
-		self.health_points     = self.max_health
-		self.punch_damage      = 40
-		self.projectile_damage = 20
-		self.alive             = True
+    Animations:
+      idle   – standing still (passive)
+      walk   – moving (active during movement)
+      punch  – 3-frame melee animation (triggered when in punch range)
+      cast   – 2-frame casting animation (Phase 2 only, before firing)
+    """
 
-		# ── Phase-System ───────────────────────────────────────────────────
-		self.phase             = 1   # Phase 1 oder 2
-		self.lifelong_tick     = 0   # Gesamtlebensdauer in Frames
+    # ── Class-level constants (same for every boss_opp instance) ────────────
 
-		# ── Punch-System ───────────────────────────────────────────────────
-		self._punch_cd         = 0   # Cooldown-Zähler für Punch-Angriffe
-		self._punch_active     = False  # Ist gerade ein Punch aktiv?
-		self._punch_tick       = 0   # Frame-Zähler innerhalb des Punch
+    PUNCH_RANGE         = 150   # pixels: melee attack triggers below this distance
+    PUNCH_DELAY         = 60    # frames of wind-up before the punch hit is checked
+    PUNCH_COOLDOWN      = 120   # frames between two punch attacks (2 s at 60 FPS)
 
-		# ── Cast-System (Phase 2) ──────────────────────────────────────────
-		self._cast_cd          = 0   # Cooldown-Zähler für Cast-Angriffe
-		self._cast_active      = False  # Ist gerade ein Cast aktiv?
-		self._cast_tick        = 0   # Frame-Zähler innerhalb des Cast
+    PHASE_2_THRESHOLD   = 500   # HP at which Olaf enters Phase 2
+    CAST_COOLDOWN_BASE  = 180   # frames between projectile casts in Phase 2 (3 s)
+    CAST_DELAY          = 40    # frames of cast animation before the projectile spawns
 
-		# ── Animationen ────────────────────────────────────────────────────
-		# (alle mit scale=0.5 wie im Original)
-		script_dir = SCRIPT_DIR
-		
-		# Idle-Animation (Standbild)
-		self.anim_idle = load_image(
-			os.path.join(script_dir, "olaf", "idle_olaf", "idle_olaf.png"), 
-			scale=0.5
-		)
-		
-		# Walk-Animation (Laufbild)
-		self.anim_walk = load_image(
-			os.path.join(script_dir, "olaf", "walk_olaf", "walk_olaf.png"), 
-			scale=0.5
-		)
-		
-		# Punch-Animationen (3 Frames)
-		self.anim_punch = [
-			load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_1.png"), scale=0.5),
-			load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_2.png"), scale=0.5),
-			load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_3.png"), scale=0.5),
-		]
-		
-		# Cast-Animationen (2 Frames, nur Phase 2)
-		self.anim_cast = [
-			load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_1.png"), scale=0.5),
-			load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_2.png"), scale=0.5),
-		]
+    def __init__(self):
+        # ── HP & Damage ──────────────────────────────────────────────────────
+        self.max_health         = 1000
+        self.health_points      = self.max_health
+        self.punch_damage       = 40   # HP removed per punch hit
+        self.projectile_damage  = 20   # HP removed per projectile hit
+        self.alive              = True
 
-		# Aktuelles Animations-Sprite
-		self.image = self.anim_idle
-		
-		# ── Animation-Zustand ──────────────────────────────────────────────
-		self.animation_tick   = 0    # Frame-Zähler für idle/walk-Togglel
-		self.is_walking       = False  # Gerade Laufanimation?
-		self.is_first_skin    = True   # Welches Sprite (idle/walk toggle)
+        # ── Phase System ─────────────────────────────────────────────────────
+        self.phase          = 1   # 1 or 2; transitions at PHASE_2_THRESHOLD
+        self.lifelong_tick  = 0   # total frames the boss has been alive
 
-		# ── Position & Collision ───────────────────────────────────────────
-		width, height = 1250, 720
-		bx = width  // 2 - self.image.get_width()  // 2
-		by = height - self.image.get_height() - 10
-		self.position = [bx, by]  # liste statt tuple für in-place updates
-		self.rect     = self.image.get_rect(topleft=self.position)
+        # ── Punch System ─────────────────────────────────────────────────────
+        self._punch_cd      = 0      # cooldown counter (decrements each frame)
+        self._punch_active  = False  # True while the punch animation is playing
+        self._punch_tick    = 0      # frame counter within the current punch
 
-		# ── Bewegung ───────────────────────────────────────────────────────
-		self.speed = 1.5   # Pixel pro Frame auf Marx zu
-		self.vx = 0        # aktuelle Geschwindigkeit X
-		self.vy = 0        # aktuelle Geschwindigkeit Y
+        # ── Cast System (Phase 2) ─────────────────────────────────────────────
+        self._cast_cd       = 0      # cooldown counter for casts
+        self._cast_active   = False  # True while the cast animation is playing
+        self._cast_tick     = 0      # frame counter within the current cast
 
-	# ── Hilfsmethoden ─────────────────────────────────────────────────────────
+        # ── Animations ──────────────────────────────────────────────────────
+        # All sprites are loaded at scale 0.5 (half of their original size)
+        script_dir = SCRIPT_DIR
 
-	def draw(self, screen):
-		"""Zeichnet Olaf auf den Screen (nur wenn lebendig)."""
-		if self.alive:
-			screen.blit(self.image, self.position)
+        # Idle animation: single frame shown when Olaf is standing still
+        self.anim_idle = load_image(
+            os.path.join(script_dir, "olaf", "idle_olaf", "idle_olaf.png"),
+            scale=0.5
+        )
 
-	def get_rect(self):
-		"""Gibt das Kollisionsrechteck zurück."""
-		return self.rect
+        # Walk animation: single frame shown when Olaf is moving
+        self.anim_walk = load_image(
+            os.path.join(script_dir, "olaf", "walk_olaf", "walk_olaf.png"),
+            scale=0.5
+        )
 
-	def get_center_position(self):
-		"""Gibt die Mittelpunkt-Koordinaten zurück."""
-		return self.rect.center
+        # Punch animation: 3 frames; played over 45 ticks (15 ticks per frame)
+        self.anim_punch = [
+            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_1.png"), scale=0.5),
+            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_2.png"), scale=0.5),
+            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_3.png"), scale=0.5),
+        ]
 
-	def gethealth(self):
-		"""Wird von health_bar benötigt."""
-		return self.health_points
+        # Cast animation: 2 frames; played over 30 ticks (15 ticks per frame)
+        # Only used in Phase 2 when firing a projectile
+        self.anim_cast = [
+            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_1.png"), scale=0.5),
+            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_2.png"), scale=0.5),
+        ]
 
-	def getdamage(self, damage):
-		"""Zieht Schaden ab; markiert Boss als tot wenn HP <= 0."""
-		self.health_points -= damage
-		if self.health_points <= 0:
-			self.alive = False
+        # Start with the idle sprite
+        self.image = self.anim_idle
 
-	def get_distance_to_player(self, player):
-		"""Berechnet euklidische Entfernung von Olaf zu Marx."""
-		bx, by = self.rect.center
-		px = player.x + player.rect.width  // 2
-		py = player.y + player.rect.height // 2
-		return ((bx - px) ** 2 + (by - py) ** 2) ** 0.5
+        # ── Animation State ──────────────────────────────────────────────────
+        self.animation_tick  = 0      # frame counter for idle/walk toggle
+        self.is_walking      = False  # True while Olaf is moving toward Marx
+        self.is_first_skin   = True   # toggle flag for idle/walk sprite swap
 
-	# ── Bewegung zum Spieler ──────────────────────────────────────────────────
+        # ── Position & Collision ─────────────────────────────────────────────
+        # Olaf spawns at the bottom-centre of the screen
+        w, h = 1250, 720
+        bx = w // 2 - self.image.get_width()  // 2
+        by = h      - self.image.get_height() - 10
+        self.position = [bx, by]   # list (not tuple) so values can be updated in place
+        self.rect     = self.image.get_rect(topleft=self.position)
 
-	def follow_player(self, player):
-		"""
-		Bewegt Olaf sanft auf Marx zu (wie die normalen Gegner).
-		Nutzt smooth-movement mit 10% Beschleunigung pro Frame.
-		"""
-		target_x = player.x + uniform(-20, 20)  # kleine zufällige Variation
-		target_y = player.y + uniform(-20, 20)
+        # ── Movement ─────────────────────────────────────────────────────────
+        self.speed = 1.5   # maximum pixels per frame toward Marx
+        self.vx    = 0.0   # current horizontal velocity
+        self.vy    = 0.0   # current vertical velocity
 
-		dx = target_x - self.position[0]
-		dy = target_y - self.position[1]
-		dist = (dx ** 2 + dy ** 2) ** 0.5
+    # =========================================================================
+    # Helper Methods
+    # =========================================================================
 
-		if dist < 5:
-			self.vx = self.vy = 0
-			self.is_walking = False
-			return
+    def draw(self, screen):
+        """Draw Olaf's current sprite onto the screen.  Does nothing if dead."""
+        if self.alive:
+            screen.blit(self.image, self.position)
 
-		# Normalisieren
-		dx /= dist
-		dy /= dist
+    def get_rect(self):
+        """Return the collision rect (used by punch_area and projectile checks)."""
+        return self.rect
 
-		# Smooth acceleration (10% pro Frame)
-		self.vx += (dx * self.speed - self.vx) * 0.1
-		self.vy += (dy * self.speed - self.vy) * 0.1
+    def get_center_position(self):
+        """Return the centre-point coordinates of Olaf's sprite."""
+        return self.rect.center
 
-		# Position aktualisieren
-		self.position[0] += self.vx
-		self.position[1] += self.vy
-		self.rect.topleft = self.position
-		
-		# walking-Zustand aktualisieren (für Animation)
-		self.is_walking = abs(self.vx) > 0.1 or abs(self.vy) > 0.1
+    def gethealth(self):
+        """Return current HP.  Called by health_bar every frame."""
+        return self.health_points
 
-	# ── Animation-System ──────────────────────────────────────────────────────
+    def getdamage(self, damage):
+        """
+        Subtract damage from HP.
+        Sets alive = False when HP drops to 0 or below.
+        """
+        self.health_points -= damage
+        if self.health_points <= 0:
+            self.alive = False
 
-	def update_animation(self):
-		"""
-		Aktualisiert das aktuelle Animations-Sprite basierend auf Olaf's Zustand.
-		
-		Priorität:
-		  1. Wenn Punch aktiv → punch_animation
-		  2. Wenn Cast aktiv → cast_animation
-		  3. Wenn laufen → walk/idle Rotation
-		  4. Sonst → idle
-		"""
-		# -- Punch-Animation läuft gerade -----
-		if self._punch_active:
-			# 3 Frames (punch_olaf 1, 2, 3) über 45 Frames insgesamt (15 Frames pro Frame)
-			frame_idx = min(2, self._punch_tick // 15)
-			self.image = self.anim_punch[frame_idx]
-			return
+    def get_distance_to_player(self, player):
+        """
+        Calculate the Euclidean distance between Olaf's centre and Marx's centre.
+        Used to decide when to trigger the punch attack.
+        """
+        bx, by = self.rect.center
+        px     = player.x + player.rect.width  // 2
+        py     = player.y + player.rect.height // 2
+        return ((bx - px) ** 2 + (by - py) ** 2) ** 0.5
 
-		# -- Cast-Animation läuft gerade -----
-		if self._cast_active:
-			# 2 Frames (cast_olaf 1, 2) über 30 Frames insgesamt (15 Frames pro Frame)
-			frame_idx = min(1, self._cast_tick // 15)
-			self.image = self.anim_cast[frame_idx]
-			return
+    # =========================================================================
+    # Movement
+    # =========================================================================
 
-		# -- Normale Idle/Walk-Animation -----
-		if self.is_walking:
-			self.animation_tick += 1
-			if self.animation_tick >= 15:
-				# Alle 15 Frames zwischen idle und walk togglen
-				self.image = self.anim_walk if self.is_first_skin else self.anim_idle
-				self.is_first_skin = not self.is_first_skin
-				self.animation_tick = 0
-		else:
-			# Steht: Idle-Animation
-			self.image = self.anim_idle
-			self.animation_tick = 0
-			self.is_first_skin = True
+    def follow_player(self, player):
+        """
+        Move Olaf smoothly toward Marx using 10 % acceleration per frame.
+        A small random offset is added to the target position each frame to
+        create slightly erratic movement (harder to dodge).
+        """
+        # Add slight jitter to the target to prevent perfectly predictable paths
+        target_x = player.x + uniform(-20, 20)
+        target_y = player.y + uniform(-20, 20)
 
-	# ── Punch-System ──────────────────────────────────────────────────────────
+        dx   = target_x - self.position[0]
+        dy   = target_y - self.position[1]
+        dist = (dx ** 2 + dy ** 2) ** 0.5
 
-	def _update_punch_cooldown(self):
-		"""Zählt den Punch-Cooldown runter."""
-		if self._punch_cd > 0:
-			self._punch_cd -= 1
+        if dist < 5:
+            # Already close enough – stop moving
+            self.vx = self.vy = 0
+            self.is_walking = False
+            return
 
-	def _check_and_trigger_punch(self, player, punch_area):
-		"""
-		Prüft ob Olaf Marx schlagen soll und aktiviert punch_area ggf.
-		Bedingungen:
-		  - Marx ist in Reichweite (< PUNCH_RANGE pixels)
-		  - Kein Punch-Cooldown mehr aktiv
-		"""
-		if self.get_distance_to_player(player) < self.PUNCH_RANGE and self._punch_cd == 0:
-			# Punch starten und punch_area aktivieren
-			self._punch_active = True
-			self._punch_tick = 0
-			punch_area.activate(self.punch_damage, delay_frames=self.PUNCH_DELAY)
-			self._punch_cd = self.PUNCH_COOLDOWN
+        # Normalise the direction vector
+        dx /= dist
+        dy /= dist
 
-	def _update_punch_animation(self):
-		"""Tickt die aktive Punch-Animation."""
-		if not self._punch_active:
-			return
+        # Smooth acceleration: blend current velocity toward the target velocity
+        # by 10 % each frame.  This gives a natural ease-in / ease-out feel.
+        self.vx += (dx * self.speed - self.vx) * 0.1
+        self.vy += (dy * self.speed - self.vy) * 0.1
 
-		self._punch_tick += 1
-		# Punch dauert 45 Frames (3 Frames * 15 Frames pro Frame)
-		if self._punch_tick >= 45:
-			self._punch_active = False
-			self._punch_tick = 0
+        # Apply velocity to position
+        self.position[0] += self.vx
+        self.position[1] += self.vy
+        self.rect.topleft  = self.position
 
-	# ── Cast-System (Phase 2) ─────────────────────────────────────────────────
+        # Update walking state for the animation system
+        self.is_walking = abs(self.vx) > 0.1 or abs(self.vy) > 0.1
 
-	def _update_cast_cooldown(self):
-		"""Zählt den Cast-Cooldown runter."""
-		if self._cast_cd > 0:
-			self._cast_cd -= 1
+    # =========================================================================
+    # Animation System
+    # =========================================================================
 
-	def _check_and_trigger_cast(self, projectiles):
-		"""
-		Prüft ob Olaf (in Phase 2) ein Projektil schießen soll.
-		Cast hat niedrigeres Cooldown als Punch um mehr Abwechslung zu schaffen.
-		"""
-		if self.phase == 2 and self._cast_cd == 0:
-			self._cast_active = True
-			self._cast_tick = 0
-			self._cast_cd = self.CAST_COOLDOWN_BASE
-			
-			# Projektil spawnen (nach CAST_DELAY Frames)
-			self._spawn_projectile(projectiles)
+    def update_animation(self):
+        """
+        Select the correct sprite for this frame based on Olaf's current state.
 
-	def _spawn_projectile(self, projectiles):
-		"""
-		Spawnt ein Projektil von Olaf's Position mit Richtung zu Marx.
-		Wird vom Cast-Angriff aufgerufen.
-		"""
-		# Projektil landet auf dem Boss, fliegt zu zufälligem Punkt relativ zu Marx
-		cx, cy = self.get_center_position()
-		projectile = boss_projectile(
-			start_x=cx,
-			start_y=cy,
-			damage=self.projectile_damage,
-			delay_frames=self.CAST_DELAY
-		)
-		projectiles.append(projectile)
+        Priority order:
+          1. Punch animation is active → show punch frame
+          2. Cast animation is active  → show cast frame
+          3. Walking                   → toggle between walk and idle every 15 frames
+          4. Standing still            → show idle frame
+        """
+        # -- Punch animation takes highest priority ----------------------------
+        if self._punch_active:
+            # 3 sprites spread over 45 frames (15 frames per sprite)
+            frame_idx  = min(2, self._punch_tick // 15)
+            self.image = self.anim_punch[frame_idx]
+            return
 
-	def _update_cast_animation(self):
-		"""Tickt die aktive Cast-Animation."""
-		if not self._cast_active:
-			return
+        # -- Cast animation takes second priority -----------------------------
+        if self._cast_active:
+            # 2 sprites spread over 30 frames (15 frames per sprite)
+            frame_idx  = min(1, self._cast_tick // 15)
+            self.image = self.anim_cast[frame_idx]
+            return
 
-		self._cast_tick += 1
-		# Cast dauert 30 Frames (2 Frames * 15 Frames pro Frame)
-		if self._cast_tick >= 30:
-			self._cast_active = False
-			self._cast_tick = 0
+        # -- Normal idle / walk animation -------------------------------------
+        if self.is_walking:
+            self.animation_tick += 1
+            if self.animation_tick >= 15:
+                # Toggle between walk and idle every 15 frames
+                self.image = self.anim_walk if self.is_first_skin else self.anim_idle
+                self.is_first_skin  = not self.is_first_skin
+                self.animation_tick = 0
+        else:
+            # Not moving → always idle
+            self.image          = self.anim_idle
+            self.animation_tick = 0
+            self.is_first_skin  = True
 
-	# ── Phase-System ──────────────────────────────────────────────────────────
+    # =========================================================================
+    # Punch System
+    # =========================================================================
 
-	def _check_phase(self):
-		"""
-		Prüft ob Olaf in Phase 2 wechseln soll (bei 50% Health).
-		Phase 2 → Projektile werden verfügbar.
-		"""
-		if self.health_points <= self.PHASE_2_THRESHOLD and self.phase == 1:
-			self.phase = 2
+    def _update_punch_cooldown(self):
+        """Decrement the punch cooldown counter by 1 each frame."""
+        if self._punch_cd > 0:
+            self._punch_cd -= 1
 
-	# ── Haupt-Tick ────────────────────────────────────────────────────────────
+    def _check_and_trigger_punch(self, player, punch_area):
+        """
+        Trigger a punch attack if Marx is close enough and the cooldown is over.
 
-	def tick(self, player, projectiles, punch_area):
-		"""
-		Wird jeden Frame aufgerufen.
-		  player       – Marx-Objekt
-		  projectiles  – Liste für Projektile (wird bei Phase 2 befüllt)
-		  punch_area   – punch_area-Objekt für Nahkampf-Angriffe
-		"""
-		if not self.alive:
-			return
+        Conditions:
+          - Distance to Marx < PUNCH_RANGE pixels
+          - _punch_cd == 0 (no cooldown active)
+        """
+        if self.get_distance_to_player(player) < self.PUNCH_RANGE and self._punch_cd == 0:
+            # Start the punch animation and arm the punch_area
+            self._punch_active = True
+            self._punch_tick   = 0
+            punch_area.activate(self.punch_damage, delay_frames=self.PUNCH_DELAY)
+            self._punch_cd = self.PUNCH_COOLDOWN   # start cooldown
 
-		self.lifelong_tick += 1
+    def _update_punch_animation(self):
+        """
+        Advance the punch animation tick.
+        Deactivates the punch after 45 frames (3 sprites × 15 frames each).
+        """
+        if not self._punch_active:
+            return
 
-		# ── Phase-Check ────────────────────────────────────────────────────
-		self._check_phase()
+        self._punch_tick += 1
+        if self._punch_tick >= 45:
+            self._punch_active = False
+            self._punch_tick   = 0
 
-		# ── Bewegung ───────────────────────────────────────────────────────
-		self.follow_player(player)
+    # =========================================================================
+    # Cast System (Phase 2)
+    # =========================================================================
 
-		# ── Punch-System ───────────────────────────────────────────────────
-		self._update_punch_cooldown()
-		self._check_and_trigger_punch(player, punch_area)
-		self._update_punch_animation()
-		punch_area.tick(player)  # punch_area jeden Frame ticken (Damage-Auslösung)
+    def _update_cast_cooldown(self):
+        """Decrement the cast cooldown counter by 1 each frame."""
+        if self._cast_cd > 0:
+            self._cast_cd -= 1
 
-		# ── Cast-System (Phase 2) ──────────────────────────────────────────
-		if self.phase == 2:
-			self._update_cast_cooldown()
-			self._check_and_trigger_cast(projectiles)
-			self._update_cast_animation()
+    def _check_and_trigger_cast(self, projectiles):
+        """
+        Trigger a projectile cast if Olaf is in Phase 2 and the cooldown is over.
+        Spawns a boss_projectile and starts the cast animation.
+        """
+        if self.phase == 2 and self._cast_cd == 0:
+            self._cast_active  = True
+            self._cast_tick    = 0
+            self._cast_cd      = self.CAST_COOLDOWN_BASE
+            # Spawn the projectile (it will wait CAST_DELAY frames before flying)
+            self._spawn_projectile(projectiles)
 
-		# ── Animation aktualisieren ───────────────────────────────────────
-		self.update_animation()
+    def _spawn_projectile(self, projectiles):
+        """
+        Create a boss_projectile at Olaf's current centre position and add it
+        to the projectiles list.  The projectile flies to a random point near
+        Marx after the CAST_DELAY has elapsed.
+        """
+        cx, cy = self.get_center_position()
+        projectile = boss_projectile(
+            start_x=cx,
+            start_y=cy,
+            damage=self.projectile_damage,
+            delay_frames=self.CAST_DELAY
+        )
+        projectiles.append(projectile)
+
+    def _update_cast_animation(self):
+        """
+        Advance the cast animation tick.
+        Deactivates the cast after 30 frames (2 sprites × 15 frames each).
+        """
+        if not self._cast_active:
+            return
+
+        self._cast_tick += 1
+        if self._cast_tick >= 30:
+            self._cast_active = False
+            self._cast_tick   = 0
+
+    # =========================================================================
+    # Phase System
+    # =========================================================================
+
+    def _check_phase(self):
+        """
+        Transition Olaf from Phase 1 to Phase 2 when his HP drops to
+        PHASE_2_THRESHOLD (50 % = 500 HP).  Can only happen once.
+        """
+        if self.health_points <= self.PHASE_2_THRESHOLD and self.phase == 1:
+            self.phase = 2
+
+    # =========================================================================
+    # Main Tick (called every frame by boss_fight.py)
+    # =========================================================================
+
+    def tick(self, player, projectiles, punch_area):
+        """
+        Per-frame update for the boss.  Called by boss_fight.py each iteration.
+
+        Parameters
+        ----------
+        player      – the marx object
+        projectiles – list to append new boss_projectile objects to
+        punch_area  – the punch_area instance that visualises and applies the hit
+        """
+        if not self.alive:
+            return
+
+        self.lifelong_tick += 1
+
+        # 1. Check whether Phase 2 should start
+        self._check_phase()
+
+        # 2. Move toward Marx
+        self.follow_player(player)
+
+        # 3. Melee punch system
+        self._update_punch_cooldown()
+        self._check_and_trigger_punch(player, punch_area)
+        self._update_punch_animation()
+        punch_area.tick(player)   # tick punch_area so it counts down and deals damage
+
+        # 4. Ranged cast system (Phase 2 only)
+        if self.phase == 2:
+            self._update_cast_cooldown()
+            self._check_and_trigger_cast(projectiles)
+            self._update_cast_animation()
+
+        # 5. Update the displayed sprite
+        self.update_animation()
+
+
+# =============================================================================
+# punch_area  –  Boss Melee Attack Zone
+# =============================================================================
 
 class punch_area:
-	"""
-	Halbtransparenter Angriffskreis um den Boss.
-	
-	Verhalten:
-	  - Inaktiv    → weißer, halbtransparenter Kreis
-	  - Aktiv      → Kreis fadet langsam von Weiß nach Rot während der Delay läuft
-	  - Bei Ablauf → Kollisionsprüfung; trifft Marx → Schaden; danach wieder inaktiv
-	
-	Technik: identisch zu damage_area.drawrect() — eigene SRCALPHA-Surface
-	damit die Transparenz korrekt über anderen Sprites liegt.
-	"""
+    """
+    Semi-transparent circle drawn around the boss during a melee attack.
 
-	RADIUS = 100   # Radius des Angriffskreises in Pixeln
-	ALPHA  = 0  # Transparenz (0 = unsichtbar, 255 = untransparent)
+    Behaviour:
+      Inactive   → white, half-transparent circle (always visible)
+      Activated  → the circle fades from transparent to red over the delay period
+      On expiry  → collision with Marx is checked; if hit, damage is applied;
+                   then the area becomes inactive again
 
-	def __init__(self, boss):
-		self.boss       = boss
-		self.active     = False
-		self.tick_count = 0    # verbleibende Frames bis zum Einschlag
-		self.max_ticks  = 0    # Startwert des Countdowns (für Farbberechnung)
-		self.damage     = 0
+    The SRCALPHA surface technique is identical to damage_area.drawrect() used
+    for Marx's attack circle.
+    """
 
-	# ── Steuerung ─────────────────────────────────────────────────────────────
+    RADIUS = 100   # radius of the attack circle in pixels
+    ALPHA  = 0     # current alpha value (0 = invisible, 255 = fully opaque)
 
-	def activate(self, damage, delay_frames):
-		"""
-		Startet den Angriffsvorgang.
-		Wird ignoriert wenn bereits ein Angriff läuft (kein Reset).
-		  damage        – Schaden der bei Ablauf ausgelöst wird
-		  delay_frames  – Vorlaufzeit in Frames (z.B. 60 = 1 Sek bei 60 FPS)
-		"""
-		if not self.active:
-			self.damage     = damage
-			self.tick_count = delay_frames
-			self.max_ticks  = delay_frames
-			self.active     = True
+    def __init__(self, boss):
+        self.boss        = boss
+        self.active      = False
+        self.tick_count  = 0   # remaining frames until the hit is applied
+        self.max_ticks   = 0   # initial value of tick_count (for colour interpolation)
+        self.damage      = 0   # damage to apply when the countdown reaches 0
 
-	def tick(self, player):
-		"""
-		Muss jeden Frame aufgerufen werden (vom boss_opp.tick() aus).
-		Zählt den Delay-Counter runter; löst Schaden aus wenn er auf 0 fällt.
-		"""
-		if not self.active:
-			return
+    # ── Controls ─────────────────────────────────────────────────────────────
 
-		if self.tick_count > 0:
-			self.tick_count -= 1
-		else:
-			# Delay abgelaufen → Kollision prüfen und Schaden vergeben
-			if player.get_rect().colliderect(self._get_collision_rect()):
-				player.get_damage(self.damage)
-			self.active = False   # Angriff beendet
+    def activate(self, damage, delay_frames):
+        """
+        Start the attack countdown.
+        Ignored if an attack is already in progress (no interrupt / reset).
 
-	# ── Intern ────────────────────────────────────────────────────────────────
+        Parameters
+        ----------
+        damage       – HP to remove from Marx when the delay expires
+        delay_frames – number of frames until the hit is applied
+        """
+        if not self.active:
+            self.damage     = damage
+            self.tick_count = delay_frames
+            self.max_ticks  = delay_frames
+            self.active     = True
 
-	def _get_color(self):
-		"""
-		Berechnet die aktuelle Füllfarbe als RGBA-Tupel.
-		
-		Inaktiv          → Transparent  (255, 0, 0, ALPHA = 0)
-		Aktiv, Beginn    → Rot  (progress von ALPHA bis 0.7)
-		Aktiv, kurz vorm Einschlag → Rot (255, 0, 0, ALPHA = 0.7)
-		
-		Formel: G und B linear mit `progress` skalieren,
-		        R bleibt immer 255 → ergibt sauberen Weiß→Rot-Übergang.
-		"""
-		if not self.active or self.max_ticks == 0:
-			return (255, 0, 0, self.ALPHA)
+    def tick(self, player):
+        """
+        Must be called every frame (from boss_opp.tick()).
+        Counts down the delay; when it reaches 0, checks collision and deals damage.
+        """
+        if not self.active:
+            return
 
-		progress = (1-(self.tick_count / self.max_ticks))/1.33   # 0.0 -> 0.75 ungefähr
-		self.ALPHA = int(255 * progress)
-		return (255, 0, 0, self.ALPHA)
+        if self.tick_count > 0:
+            self.tick_count -= 1   # one frame closer to the hit
+        else:
+            # Delay expired → apply damage if Marx is inside the area
+            if player.get_rect().colliderect(self._get_collision_rect()):
+                player.get_damage(self.damage)
+            self.active = False   # attack is over
 
-	def _get_collision_rect(self):
-		"""Kollisionsrechteck zentriert auf die Boss-Mitte."""
-		cx, cy = self.boss.get_center_position()
-		r = self.RADIUS
-		return pygame.Rect(cx - r, cy - r, r * 2, r * 2)
+    # ── Internal Helpers ─────────────────────────────────────────────────────
 
-	# ── Zeichnen ──────────────────────────────────────────────────────────────
+    def _get_color(self):
+        """
+        Compute the current fill colour as an RGBA tuple.
 
-	def draw(self, screen):
-		"""
-		Zeichnet den halbtransparenten Kreis — exakt dieselbe Technik
-		wie damage_area.drawrect() bei Marx:
-		  1. Eigene Surface mit SRCALPHA erstellen
-		  2. Kreis darauf zeichnen (mit Farbverlauf-Farbe)
-		  3. Surface auf den Screen blitten
-		"""
-		cx, cy = self.boss.get_center_position()
-		r      = self.RADIUS
-		color  = self._get_color()
+        Inactive            → transparent red  (255, 0, 0, ALPHA=0)
+        Activating (start)  → slowly increasing alpha
+        Just before impact  → red at roughly 75 % opacity
 
-		# Ziel-Rechteck zentriert auf den Boss (wie bei damage_area)
-		target_rect = pygame.Rect(0, 0, 0, 0).inflate(0, 0)
-		target_rect = pygame.Rect(cx - r, cy - r, r * 2, r * 2)
+        The green and blue channels are scaled linearly with `progress` while
+        red stays at 255, producing a clean white → red transition.
+        """
+        if not self.active or self.max_ticks == 0:
+            return (255, 0, 0, self.ALPHA)
 
-		shape_surf = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
-		pygame.draw.circle(shape_surf, color, (r, r), r)
-		screen.blit(shape_surf, target_rect)
+        progress   = (1 - (self.tick_count / self.max_ticks)) / 1.33   # 0.0 → ~0.75
+        self.ALPHA = int(255 * progress)
+        return (255, 0, 0, self.ALPHA)
+
+    def _get_collision_rect(self):
+        """Return a rect centred on the boss used for hit detection."""
+        cx, cy = self.boss.get_center_position()
+        r      = self.RADIUS
+        return pygame.Rect(cx - r, cy - r, r * 2, r * 2)
+
+    # ── Drawing ───────────────────────────────────────────────────────────────
+
+    def draw(self, screen):
+        """
+        Draw the semi-transparent circle using the same SRCALPHA technique as
+        damage_area.drawrect():
+          1. Create a Surface with SRCALPHA (per-pixel alpha)
+          2. Draw the circle onto it with the current colour
+          3. Blit the surface onto the main screen
+        """
+        cx, cy = self.boss.get_center_position()
+        r      = self.RADIUS
+        color  = self._get_color()
+
+        target_rect = pygame.Rect(cx - r, cy - r, r * 2, r * 2)
+        shape_surf  = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+        pygame.draw.circle(shape_surf, color, (r, r), r)
+        screen.blit(shape_surf, target_rect)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Boss-Projektil-Klasse
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# boss_projectile  –  Ranged Attack (Phase 2)
+# =============================================================================
 
 class boss_projectile:
-	"""
-	Projektil schießt von Boss zu zufälligem Punkt relativ zu Marx.
-	Wird von Olaf's Cast-Angriff in Phase 2 gespawnt.
-	
-	Mechanik:
-	  - Startet auf Boss-Position mit Verzögerung (für Animation)
-	  - Nach Verzögerung: schneide zu Zielposition
-	  - Erreicht Zielposition → Explosion & Schaden-Prüfung
-	  - Wird danach aus der Liste entfernt (alive = False)
-	"""
+    """
+    Projectile fired by Olaf in Phase 2.
 
-	SPEED       = 3  # Pixel pro Frame während des Flugs
-	RADIUS      = 30  # Radius des Explosionsradius (Kollisión mit Marx)
+    Lifecycle:
+      1. Spawns at the boss's position.
+      2. Waits for delay_frames (plays cast animation on the boss side).
+      3. Flies toward a random point near Marx at SPEED pixels per frame.
+      4. On arrival (within 20 px of target): explodes, checks collision, deals damage.
+      5. alive is set to False → removed from the list by boss_fight.py.
+    """
 
-	def __init__(self, start_x, start_y, damage, delay_frames):
-		"""
-		start_x, start_y – Spawn-Position (auf Olaf)
-		damage           – Schaden bei Treffer
-		delay_frames     – Frames bis der Flug startet (Animation)
-		"""
-		self.start_x        = start_x
-		self.start_y        = start_y
-		self.x              = float(start_x)
-		self.y              = float(start_y)
-		self.damage         = damage
-		self.alive          = True
-		self.has_exploded   = False
+    SPEED  = 3    # pixels per frame during flight
+    RADIUS = 30   # explosion radius used for hit detection
 
-		# Verzögerung & Flug-Tracking
-		self.delay_frames   = delay_frames
-		self.tick_count     = 0
+    def __init__(self, start_x, start_y, damage, delay_frames):
+        """
+        Parameters
+        ----------
+        start_x, start_y – spawn position (Olaf's centre)
+        damage           – HP removed from Marx on a direct hit
+        delay_frames     – frames to wait before the projectile starts flying
+        """
+        self.start_x      = start_x
+        self.start_y      = start_y
+        self.x            = float(start_x)
+        self.y            = float(start_y)
+        self.damage       = damage
+        self.alive        = True
+        self.has_exploded = False
 
-		# Zielposition: zufällig um (0, 0) relativ zum Spawn-Punkt
-		offset_range = 200
-		self.target_x = start_x + uniform(-offset_range, offset_range)
-		self.target_y = start_y + uniform(-offset_range, offset_range)
+        # Delay tracking
+        self.delay_frames = delay_frames
+        self.tick_count   = 0
 
-		# Richtungs-Vektor normalisieren & mit Speed multiplizieren
-		dx = self.target_x - self.x
-		dy = self.target_y - self.y
-		dist = (dx ** 2 + dy ** 2) ** 0.5
-		if dist > 0:
-			self.vx = (dx / dist) * self.SPEED
-			self.vy = (dy / dist) * self.SPEED
-		else:
-			self.vx = self.vy = 0
+        # Target: a random point within ±200 px of the spawn position.
+        # This gives the projectile a spread pattern rather than always hitting
+        # the exact same spot.
+        offset_range  = 200
+        self.target_x = start_x + uniform(-offset_range, offset_range)
+        self.target_y = start_y + uniform(-offset_range, offset_range)
 
-		# Sprite (projectile.png)
-		try:
-			self.image = load_image(os.path.join(SCRIPT_DIR, "projectile.png"), scale=0.25)
-		except Exception as e:
-			print(f"Projektil-Texture nicht gefunden: {e}")
-			self.image = None
+        # Pre-compute the normalised direction vector scaled by SPEED
+        dx   = self.target_x - self.x
+        dy   = self.target_y - self.y
+        dist = (dx ** 2 + dy ** 2) ** 0.5
+        if dist > 0:
+            self.vx = (dx / dist) * self.SPEED
+            self.vy = (dy / dist) * self.SPEED
+        else:
+            self.vx = self.vy = 0   # edge case: spawn == target
 
-		self.rect = self.image.get_rect(topleft=(int(self.x), int(self.y))) if self.image else pygame.Rect(0, 0, 0, 0)
+        # Load the projectile sprite (projectile.png)
+        try:
+            self.image = load_image(os.path.join(SCRIPT_DIR, "projectile.png"), scale=0.25)
+        except Exception as e:
+            print(f"Projektil-Textur nicht gefunden: {e}")
+            self.image = None
 
-	# ── Hilfsmethoden ─────────────────────────────────────────────────────────
+        # Collision rect (updated every frame during flight)
+        if self.image:
+            self.rect = self.image.get_rect(topleft=(int(self.x), int(self.y)))
+        else:
+            self.rect = pygame.Rect(0, 0, 0, 0)
 
-	def draw(self, screen):
-		"""Zeichnet das Projektil (nur während und nach Flug, nicht während Verzögerung)."""
-		if self.alive and self.tick_count >= self.delay_frames and self.image:
-			self.rect.topleft = (int(self.x), int(self.y))
-			screen.blit(self.image, self.rect)
+    # ── Drawing ───────────────────────────────────────────────────────────────
 
-	def get_rect(self):
-		"""Gibt das Kollisionsrechteck zurück."""
-		return self.rect
+    def draw(self, screen):
+        """
+        Draw the projectile sprite.
+        Hidden during the delay phase (before flight starts) and after explosion.
+        """
+        if self.alive and self.tick_count >= self.delay_frames and self.image:
+            self.rect.topleft = (int(self.x), int(self.y))
+            screen.blit(self.image, self.rect)
 
-	def get_center_position(self):
-		"""Gibt die Mittelpunkt-Koordinaten zurück."""
-		return (int(self.x + self.rect.width // 2), int(self.y + self.rect.height // 2))
+    # ── Accessors ─────────────────────────────────────────────────────────────
 
-	# ── Haupt-Tick ────────────────────────────────────────────────────────────
+    def get_rect(self):
+        """Return the collision rect."""
+        return self.rect
 
-	def tick(self, player):
-		"""
-		Wird jeden Frame aufgerufen.
-		  player – Marx-Objekt (für Kollisionsprüfung nach Träffer)
-		"""
-		if not self.alive:
-			return
+    def get_center_position(self):
+        """Return the centre coordinates."""
+        return (int(self.x + self.rect.width // 2),
+                int(self.y + self.rect.height // 2))
 
-		self.tick_count += 1
+    # ── Main Tick ─────────────────────────────────────────────────────────────
 
-		# ── Während Verzögerung: nichts tun ───────────────────────────────
-		if self.tick_count < self.delay_frames:
-			return
+    def tick(self, player):
+        """
+        Per-frame update.  Called by boss_fight.py every iteration.
 
-		# ── Flugphase: auf Zielposition zubewegen ────────────────────────
-		self.x += self.vx
-		self.y += self.vy
-		self.rect.topleft = (int(self.x), int(self.y))
+        Parameters
+        ----------
+        player – the marx object (for collision check on explosion)
+        """
+        if not self.alive:
+            return
 
-		# Prüfe ob Zielposition erreicht (innerhalb 20 Pixel)
-		dx = self.target_x - self.x
-		dy = self.target_y - self.y
-		dist = (dx ** 2 + dy ** 2) ** 0.5
+        self.tick_count += 1
 
-		if dist < 20:
-			# Ziel erreicht → Explosion
-			self._explode(player)
+        # During the delay phase: do nothing (boss plays cast animation)
+        if self.tick_count < self.delay_frames:
+            return
 
-	def _explode(self, player):
-		"""
-		Explosion bei Zielposition:
-		  - Prüfe Kollision mit Marx (Radius = RADIUS)
-		  - Wenn Treffer → Schaden
-		  - Mark als nicht lebendig (wird aus Liste entfernt)
-		"""
-		if not self.has_exploded:
-			self.has_exploded = True
-			
-			# Explosionsbereich (Kreis um Zielposition)
-			explosion_rect = pygame.Rect(
-				self.target_x - self.RADIUS,
-				self.target_y - self.RADIUS,
-				self.RADIUS * 2,
-				self.RADIUS * 2
-			)
+        # --- Flight phase: move toward the target position -------------------
+        self.x += self.vx
+        self.y += self.vy
+        self.rect.topleft = (int(self.x), int(self.y))
 
-			# Kollisionsprüfung mit Marx
-			if player.get_rect().colliderect(explosion_rect):
-				player.get_damage(self.damage)
+        # Check whether the target has been reached (within 20 px)
+        dx   = self.target_x - self.x
+        dy   = self.target_y - self.y
+        dist = (dx ** 2 + dy ** 2) ** 0.5
 
-			self.alive = False
+        if dist < 20:
+            self._explode(player)   # target reached → explode
 
+    def _explode(self, player):
+        """
+        Handle the explosion at the target position.
+          1. Build an explosion rect centred on the target (radius = RADIUS)
+          2. Check whether Marx is inside that rect
+          3. Apply damage if hit
+          4. Mark the projectile as dead so it is removed from the list
+        """
+        if not self.has_exploded:
+            self.has_exploded = True
+
+            # Explosion area as a square centred on the target position
+            explosion_rect = pygame.Rect(
+                self.target_x - self.RADIUS,
+                self.target_y - self.RADIUS,
+                self.RADIUS * 2,
+                self.RADIUS * 2
+            )
+
+            # Deal damage if Marx is inside the explosion area
+            if player.get_rect().colliderect(explosion_rect):
+                player.get_damage(self.damage)
+
+            # Deactivate the projectile so boss_fight.py removes it from the list
+            self.alive = False

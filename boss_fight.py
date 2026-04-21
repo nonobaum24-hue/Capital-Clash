@@ -1,198 +1,213 @@
+# =============================================================================
+# boss_fight.py  –  Boss Fight Game Loop
+# =============================================================================
+# Runs the final boss encounter of Capital Clash: Marx vs. Olaf.
+#
+# Differences from mainloop.py:
+#   - No timed enemy waves (SCHEDULE is empty)
+#   - The boss (BOSS) is a boss_opp instance with 1000 HP and two attack phases
+#   - A punch_area around the boss visualises and applies melee damage
+#   - In Phase 2 (HP ≤ 500) the boss also fires projectiles (boss_projectile)
+#   - A separate boss HP bar is shown at the top of the screen
+#
+# Win condition:  BOSS.alive becomes False  →  player wins
+# Lose condition: marx.alive becomes False  →  player loses
+# =============================================================================
+
 def boss_fight(screen):
     import pygame
     import os
     from game_classes import marx, damage_area, damage_screen, health_bar
     from opp_classes import normal_opp, super_opp, mini_opp, SpawnManager
     from collectible_classes import collectible_manager
-
-    print('bossfight')
-
-    import os
-    import pygame
-    from game_classes import marx, damage_area, damage_screen, health_bar
-    from opp_classes import normal_opp, super_opp, mini_opp, SpawnManager
-    from collectible_classes import collectible_manager
     from boss_classes import boss_opp, punch_area, boss_projectile
-    
-    # ─────────────────────────────────────────────────────────────────────────────
-    # Grundeinstellungen
-    # ─────────────────────────────────────────────────────────────────────────────
 
-    width  = 1250   # Fensterbreite in Pixeln
-    height = 720    # Fensterhöhe in Pixeln
+    print('bossfight')   # debug output to confirm the function was called
+
+    # =========================================================================
+    # Setup: Window / Display (same dimensions as mainloop.py)
+    # =========================================================================
+
+    width  = 1250   # window width in pixels
+    height = 720    # window height in pixels
 
     pygame.init()
     screen = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Capital Crush")
 
-    # ─────────────────────────────────────────────────────────────────────────────
-    # Pfade zu Bild-Dateien
-    # ─────────────────────────────────────────────────────────────────────────────
+    # =========================================================================
+    # Setup: Asset Paths
+    # =========================================================================
 
-    # os.path.dirname(__file__) gibt den Ordner dieser Datei zurück;
-    # join() hängt den Dateinamen dran → funktioniert unabhängig vom Arbeitsverzeichnis
+    # Build absolute paths relative to this file so the game works regardless
+    # of the current working directory.
     script_dir  = os.path.dirname(os.path.abspath(__file__))
-    marx_path   = os.path.join(script_dir, "marx1.png")   # Marx Idle-Sprite
-    marx_path2  = os.path.join(script_dir, "marx2.png")   # Marx Lauf-Sprite
-    floor_path  = os.path.join(script_dir, "floor.png")   # Hintergrundbild
+    marx_path   = os.path.join(script_dir, "marx1.png")   # Marx idle sprite
+    marx_path2  = os.path.join(script_dir, "marx2.png")   # Marx run sprite
+    floor_path  = os.path.join(script_dir, "floor.png")   # background image
 
-    # ─────────────────────────────────────────────────────────────────────────────
-    # Hintergrundbild laden
-    # ─────────────────────────────────────────────────────────────────────────────
+    # =========================================================================
+    # Setup: Background Image
+    # =========================================================================
 
-    # try/except damit das Spiel auch ohne floor.png startet (schwarzer Hintergrund als Fallback)
+    # Gracefully fall back to a black background if floor.png is missing
     try:
         floor_img = pygame.image.load(floor_path).convert_alpha()
-        floor_img = pygame.transform.scale(floor_img, (width, height))  # auf Fenstergröße skalieren
+        floor_img = pygame.transform.scale(floor_img, (width, height))   # fit to window
     except Exception as e:
         print(f"Floor nicht gefunden: {e}")
-        floor_img = None   # kein Boden → screen.fill((0,0,0)) reicht als Hintergrund
+        floor_img = None
 
-    # ─────────────────────────────────────────────────────────────────────────────
-    # Spielobjekte erstellen
-    # ─────────────────────────────────────────────────────────────────────────────
+    # =========================================================================
+    # Setup: Player Objects
+    # =========================================================================
 
-    # Spielercharakter in der Mitte des Bildschirms
+    # Player character centred on screen
     marx_char = marx(width // 2, height // 2, marx_path, marx_path2)
 
-    # Lebensanzeige von Marx: rechts oben, 200px breit, 20px hoch
+    # Marx HP bar: centred at top, 200 px wide, 20 px tall
     marx_bar  = health_bar(width//2 - 100, 20, 200, 20, marx_char)
 
-    # Angriffsbereich-Visualisierung (Kreis um Marx)
+    # Attack circle around Marx (visual indicator + hit detection)
     marx_area = damage_area(marx_char)
 
-    # Roter Overlay-Effekt wenn Marx Schaden nimmt
+    # Red full-screen flash when Marx takes damage
     dmg_scr   = damage_screen()
 
-    SCHEDULE = {}
+    # =========================================================================
+    # Setup: Spawn Infrastructure (no enemies in boss fight)
+    # =========================================================================
 
+    # Empty schedule: no regular enemy waves during the boss fight
+    SCHEDULE = {}
     spawn_manager = SpawnManager(SCHEDULE)
 
-    
+    # collectible_manager still works in case the boss drops items (expandable)
     coll_manager  = collectible_manager(marx_char)
 
-    # Aktive Gegner-Liste: nur lebende Gegner die gerade auf dem Feld sind
+    # Active regular-enemy list (stays empty, kept for API compatibility)
     opponents     = []
 
-    # Runduhr: 3600 Frames = 60 Sekunden; wird jeden Frame um 1 reduziert
+    # Round timer (kept for API compatibility with SpawnManager)
     roundtick     = 3600
 
     clock   = pygame.time.Clock()
     running = True
 
-    # ── Boss & Punch-Area initialisieren ────────────────────────────────────────
+    # =========================================================================
+    # Setup: Boss and Associated Objects
+    # =========================================================================
+
+    # Create the boss (Olaf) and the melee attack area around him
     BOSS  = boss_opp()
     punch = punch_area(BOSS)
 
-    # Boss-Healthbar: links oben, 400px breit, 30px hoch
+    # Boss HP bar: wider than Marx's bar (400 px) and slightly lower (y=60)
     boss_bar = health_bar(width//2 - 200, 60, 400, 30, BOSS)
 
-    # Projektile-Liste für Phase 2 des Bosses
+    # List for boss projectiles (populated during Phase 2)
     projectiles = []
 
-    # ─────────────────────────────────────────────────────────────────────────────
-    # Boss-Loop
-    # ─────────────────────────────────────────────────────────────────────────────
+    # =========================================================================
+    # Boss Game Loop
+    # =========================================================================
 
     while running:
 
-        # ── 1. Spawning ───────────────────────────────────────────────────────────
-        # SpawnManager prüft ob bei diesem Tick eine Welle fällig ist
-        # und gibt neu gespawnte Gegner zurück
+        # --- Step 1: Spawning (no-op for boss fight) -------------------------
+        # SpawnManager.tick() is called for API compatibility; with an empty
+        # schedule it returns an empty list every frame.
         newly_spawned = spawn_manager.tick(roundtick, marx_char)
-        opponents.extend(newly_spawned)   # sofort zur aktiven Liste hinzufügen
-        roundtick -= 1                    # Uhr einen Tick weiterschalten
+        opponents.extend(newly_spawned)
+        roundtick -= 1
 
-        # ── 2. Hintergrund zeichnen ───────────────────────────────────────────────
-        screen.fill((0, 0, 0))            # erst alles schwarz (verhindert Geister-Frames)
+        # --- Step 2: Draw Background -----------------------------------------
+        screen.fill((0, 0, 0))      # black fill prevents ghost frames
         if floor_img:
             screen.blit(floor_img, (0, 0))
 
-        # ── 3. Eingabe & Spieler-Update ───────────────────────────────────────────
+        # --- Step 3: Player Input & Update -----------------------------------
         keys      = pygame.key.get_pressed()
-        # is_moving: True wenn irgendeine Pfeiltaste gedrückt ist (für Animation)
-        is_moving = any(keys[k] for k in (pygame.K_LEFT, pygame.K_RIGHT,
-                                        pygame.K_UP,   pygame.K_DOWN))
 
-        # Bewegung + Angriff verarbeiten
+        # is_moving: True if any arrow key is pressed (drives animation selection)
+        is_moving = any(keys[k] for k in (pygame.K_LEFT, pygame.K_RIGHT,
+                                          pygame.K_UP,   pygame.K_DOWN))
+
+        # Apply movement and attack input
         marx_char.input_monitoring(keys, marx_area, opponents)
-        # Animationssprite wechseln
+        # Advance the animation sprite (idle ↔ run)
         marx_char.tick_animation(is_moving)
 
-        # alive = ob Marx noch lebt; _ = Position (hier nicht gebraucht)
+        # alive = whether Marx survived this frame; _ = position (unused)
         alive, _ = marx_char.update()
 
-        # ── 4. Marx und Angriffsbereich zeichnen ──────────────────────────────────
-        marx_area.drawrect(screen)   # Kreis (weiß/rot) um Marx
-        marx_char.draw(screen)       # Marx selbst
-        dmg_scr.draw(screen)         # roter Overlay wenn gerade Schaden
+        # --- Step 4: Draw Marx and His Attack Circle -------------------------
+        marx_area.drawrect(screen)   # white/red circle around Marx
+        marx_char.draw(screen)       # Marx sprite
+        dmg_scr.draw(screen)         # red overlay if Marx just took damage
 
-        # ── 5. Gegner updaten und zeichnen ────────────────────────────────────────
+        # --- Step 5: Boss Update and Draw ------------------------------------
 
-        # -- Boss-Bereich --------
-        # Boss ticken (Bewegung, Angriffe, Animation, Phasen)
+        # tick() handles: phase transitions, movement toward Marx, punch system,
+        # cast system (Phase 2 projectiles), and animation updates.
         BOSS.tick(marx_char, projectiles, punch)
-        
-        # Boss zeichnen
+
+        # Draw Olaf's sprite
         BOSS.draw(screen)
-        
-        # Punch-Area zeichnen (weißer/roter Kreis um Boss)
+
+        # Draw the melee attack circle around the boss (fades white → red as delay counts down)
         punch.draw(screen)
 
-        # Projektile ticken und zeichnen (Phase 2)
+        # Update and draw all active projectiles (Phase 2 only)
         for proj in projectiles:
-            proj.tick(marx_char)
-            proj.draw(screen)
-        
-        # Tote Projektile entfernen
+            proj.tick(marx_char)   # move projectile; check collision on arrival
+            proj.draw(screen)     # draw if past the delay phase
+
+        # Remove projectiles that have already exploded (alive = False)
         projectiles = [p for p in projectiles if p.alive]
 
+        # --- Regular enemies (none in boss fight, kept for extensibility) ---
         for opp in opponents:
-            opp.followplayer(marx_char)          # auf Marx zubewegen
-            opp.animation()                      # Lauf-Animation
-            opp.checkcollision(marx_char, dmg_scr) # Berührungsschaden prüfen
-            opp.draw(screen)                     # Sprite zeichnen
+            opp.followplayer(marx_char)            # move toward Marx
+            opp.animation()                        # run animation
+            opp.checkcollision(marx_char, dmg_scr) # contact damage
+            opp.draw(screen)                       # draw sprite
 
-        # Healthbars der Gegner zeichnen (nur wenn lebendig und aktiv)
+        # Draw HP bars for any regular enemies (empty in this phase)
         for bar in spawn_manager.opp_bars:
             if bar.object.alive and bar.object in opponents:
                 bar.draw(screen)
 
-        # ── 6. Collectibles ───────────────────────────────────────────────────────
-        # MUSS vor dem Cleanup passieren: tote Gegner sind hier noch in der Liste
-        # → Drop-Erkennung, Zeichnen und Aufsammel-Prüfung in einem Schritt
+        # --- Step 6: Collectibles --------------------------------------------
+        # Must happen BEFORE cleanup so dead enemy data is still available
         coll_manager.collectible_tick(screen, opponents)
 
-        # ── 7. Cleanup ────────────────────────────────────────────────────────────
-        # Tote Gegner aus der aktiven Liste entfernen
+        # --- Step 7: Cleanup -------------------------------------------------
+        # Remove dead regular enemies from the active list
         opponents = [o for o in opponents if o.alive]
-        # Tote Gegner + ihre Healthbars aus dem SpawnManager entfernen
+        # Sync the SpawnManager's internal records with the cleaned-up list
         spawn_manager.cleanup()
 
-        # ── 8. Marx Lebensanzeige ─────────────────────────────────────────────────
-        # Ganz zum Schluss damit sie über allem anderen liegt
-        marx_bar.draw(screen)
-        
-        # Boss Lebensanzeige
+        # --- Step 8: Draw HP Bars (drawn last to stay on top) ----------------
+        marx_bar.draw(screen)      # Marx's HP bar (always shown)
         if BOSS.alive:
-            boss_bar.draw(screen)
+            boss_bar.draw(screen)  # Boss HP bar (hide when boss is dead)
 
-        # ── 9. Tod-Check ──────────────────────────────────────────────────────────
+        # --- Step 9: Death and Win Checks ------------------------------------
         if not alive:
             print("Marx ist tot!")
-            running = False   # Loop beim nächsten Durchlauf beenden
-        
-        # Boss-Tod-Check (Spieler hat gewonnen!)
+            running = False   # player lost → exit loop
+
+        # Boss defeated → player wins
         if not BOSS.alive:
             print("Boss besiegt! Gewonnen!")
             running = False
 
-        # ── 10. Events ────────────────────────────────────────────────────────────
-        # Fenster-Schließen abfangen
+        # --- Step 10: Event Handling -----------------------------------------
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        # ── 11. Frame begrenzen & anzeigen ────────────────────────────────────────
-        pygame.display.flip()   # fertigen Frame auf den Bildschirm bringen
-        clock.tick(60)          # maximal 60 FPS (hält Spielgeschwindigkeit konstant)
+        # --- Step 11: Frame Cap and Display ----------------------------------
+        pygame.display.flip()   # push finished frame to the monitor
+        clock.tick(60)          # cap at 60 FPS

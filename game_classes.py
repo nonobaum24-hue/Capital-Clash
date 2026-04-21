@@ -1,337 +1,454 @@
+# =============================================================================
+# game_classes.py  –  Player Classes and Combat Helpers
+# =============================================================================
+# Contains everything that belongs to the player character (Marx) and the
+# supporting visual/combat objects around him:
+#
+#   load_image()    – cached image loader (avoids redundant disk reads)
+#   marx            – the player character: movement, attack, health, animation
+#   damage_area     – the visible attack circle around Marx
+#   damage_screen   – red screen flash when Marx takes damage
+#   health_bar      – HP bar used both by Marx and by enemies
+# =============================================================================
+
 import os
 import pygame
 from random import randint, uniform
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Modul-Konstante
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# Module-level Constants
+# =============================================================================
 
+# Absolute path to the directory that contains this script.
+# Used to build asset paths that work regardless of the working directory.
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Bild-Cache
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# Image Cache
+# =============================================================================
 
-# Globales Dictionary, das bereits geladene Bilder speichert.
-# Schlüssel ist ein Tupel aus (absoluter Pfad, Scale-Faktor), damit dasselbe
-# Bild in verschiedenen Größen separat gecacht werden kann.
+# Global dictionary that stores already-loaded images.
+# Key: (absolute_path, scale_factor)  →  Value: scaled pygame.Surface
+# Avoids loading the same image multiple times from disk, which is expensive.
 _IMAGE_CACHE = {}
 
 def load_image(path, scale=0.25):
-	"""
-	Lädt ein Bild von der Festplatte, skaliert es und gibt es zurück.
-	Wurde dasselbe Bild (gleicher Pfad + gleiche Scale) schon einmal geladen,
-	kommt es direkt aus dem Cache — kein doppeltes Laden nötig.
+    """
+    Load an image from disk, scale it, and cache the result.
 
-	Für diese Funktion wurde KI verwendet, da ich an der Performance und Fehlerlosigkeit verzwifelt bin.
-	"""
-	key = (os.path.abspath(path), float(scale))
-	if key in _IMAGE_CACHE:
-		return _IMAGE_CACHE[key]                        # Cache-Treffer → sofort zurück
-	img = pygame.image.load(path).convert_alpha()      # mit Alpha laden (Transparenz)
-	img = pygame.transform.scale(img,
-		(int(img.get_width()  * scale),
-		 int(img.get_height() * scale)))
-	_IMAGE_CACHE[key] = img                            # für spätere Aufrufe speichern
-	return img
+    If the same (path, scale) combination was loaded before, the cached
+    surface is returned immediately without touching the disk again.
+
+    Parameters
+    ----------
+    path  : str   – file path to the image
+    scale : float – scale factor applied to width and height (default 0.25)
+
+    Returns
+    -------
+    pygame.Surface – the scaled image surface with alpha channel preserved
+    """
+    key = (os.path.abspath(path), float(scale))
+
+    # Cache hit: return the already-loaded surface
+    if key in _IMAGE_CACHE:
+        return _IMAGE_CACHE[key]
+
+    # Cache miss: load from disk, scale, then store
+    img = pygame.image.load(path).convert_alpha()   # keep transparency (RGBA)
+    img = pygame.transform.scale(img, (
+        int(img.get_width()  * scale),
+        int(img.get_height() * scale)))
+
+    _IMAGE_CACHE[key] = img   # store for future calls
+    return img
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Spieler-Klasse
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# Player Class – marx
+# =============================================================================
 
 class marx:
-	"""
-	Repräsentiert den Spielercharakter Marx.
-	Kümmert sich um Bewegung, Angriff, Schadensnahme, Heilung und Animation.
-	"""
+    """
+    Represents the player character Marx.
 
-	def __init__(self, x, y, idle_path, run_path, scale=0.25,
-	             health_points=100, screen_w=1250, screen_h=720):
-		"""
-		x, y          – Startposition (relativ zu obere linke Ecke)
-		idle_path     – Pfad zum Standbild
-		run_path      – Pfad zum Laufbild
-		scale         – Skalierungsfaktor für die Sprites
-		health_points – Startleben (und gleichzeitig das Maximum)
-		screen_w/h    – Bildschirmgröße; nötig damit Marx nicht rausläuft
-		"""
-		self.x = x
-		self.y = y
-		self.alive = True
+    Responsibilities:
+      - Movement across the screen (arrow keys, clamped to window borders)
+      - Melee attack (space bar) with cooldown and random target selection
+      - Taking damage from enemies, triggering the red screen flash
+      - Healing from collectibles (capped at max_health)
+      - Toggling between idle and run sprites based on movement state
+    """
 
-		self.scale         = scale
-		self.health_points = health_points
-		self.max_health    = health_points   # Obergrenze für heal(); wird von Revive erhöht
-		self.damage        = 30              # Schaden pro Angriff
+    def __init__(self, x, y, idle_path, run_path, scale=0.25,
+                 health_points=100, screen_w=1250, screen_h=720):
+        """
+        Parameters
+        ----------
+        x, y           – starting position (top-left corner of the sprite)
+        idle_path      – file path for the standing/idle sprite
+        run_path       – file path for the running sprite
+        scale          – scale factor applied to both sprites (default 0.25)
+        health_points  – starting HP; also used as the initial max_health
+        screen_w/h     – window dimensions for movement clamping and spawn logic
+        """
+        self.x = x
+        self.y = y
+        self.alive = True
 
-		# Radius um Marx herum, in dem keine Gegner spawnen dürfen
-		self.exception_radius = 150
+        self.scale          = scale
+        self.health_points  = health_points
+        self.max_health     = health_points   # upper HP cap; raised by Revive collectibles
+        self.damage         = 30              # damage per attack hit
 
-		# Bildschirmgrenzen für die Bewegungsbegrenzung und Spawn-Logik
-		self.screen_w = screen_w
-		self.screen_h = screen_h
+        # Minimum safe distance around Marx where enemies are not allowed to spawn.
+        # Prevents enemies from spawning directly on top of the player.
+        self.exception_radius = 150
 
-		# Beide Animations-Sprites vorladen
-		self.stand_bild = load_image(idle_path, scale=self.scale)  # stehendes Bild
-		self.lauf_bild  = load_image(run_path,  scale=self.scale)  # laufendes Bild
+        # Window boundaries used for movement clamping and spawn-exclusion zone
+        self.screen_w = screen_w
+        self.screen_h = screen_h
 
-		# Beim Start: Idle-Bild aktiv
-		self.image = self.stand_bild
-		self.rect  = self.image.get_rect(topleft=(self.x, self.y))
+        # Pre-load both animation sprites via the cache
+        self.stand_bild = load_image(idle_path, scale=self.scale)   # idle frame
+        self.lauf_bild  = load_image(run_path,  scale=self.scale)   # run frame
 
-		# Animations-Zustand
-		self.framecount_skin = 0     # Zählt Frames seit letztem Skin-Wechsel
-		self.is_first_skin   = True  # Welcher Skin gerade aktiv ist (toggle)
-		self.prev_is_moving  = False # War Marx im letzten Frame in Bewegung?
+        # Start with the idle sprite active
+        self.image = self.stand_bild
+        self.rect  = self.image.get_rect(topleft=(self.x, self.y))
 
-		# Angriffs-Cooldown in Frames (0 = kann angreifen)
-		self.attack_cooldown = 0
+        # Animation state tracking
+        self.framecount_skin = 0      # frames elapsed since last sprite toggle
+        self.is_first_skin   = True   # which sprite is currently shown (toggle)
+        self.prev_is_moving  = False  # was Marx moving last frame? (for transition)
 
-	def dead(self):
-		"""Markiert Marx als tot (wird von get_damage aufgerufen)."""
-		self.alive = False
+        # Attack cooldown counter (frames remaining; 0 = ready to attack)
+        self.attack_cooldown = 0
 
-	def move(self, dx, dy):
-		"""
-		Bewegt Marx um (dx, dy) Pixel, solange er dabei nicht
-		über den Bildschirmrand hinausläuft.
-		"""
-		if 0 < self.x + dx < self.screen_w - self.rect.width:
-			self.x += dx
-		if 0 < self.y + dy < self.screen_h - self.rect.height:
-			self.y += dy
-		self.rect.topleft = (self.x, self.y)  # Kollisionsrechteck synchron halten
+    # -------------------------------------------------------------------------
+    # State Control
+    # -------------------------------------------------------------------------
 
-	def draw(self, screen):
-		"""Zeichnet Marx auf den Bildschirm (nur wenn er lebt)."""
-		if self.alive:
-			screen.blit(self.image, (self.x, self.y))
+    def dead(self):
+        """Mark Marx as dead.  Called by get_damage() when HP reaches 0."""
+        self.alive = False
 
-	def get_rect(self):
-		"""Gibt das aktuelle Kollisionsrechteck zurück."""
-		return self.rect
+    # -------------------------------------------------------------------------
+    # Movement
+    # -------------------------------------------------------------------------
 
-	def tick_animation(self, is_moving):
-		"""
-		Schaltet zwischen Idle- und Lauf-Sprite um.
-		Wird einmal pro Frame aufgerufen; is_moving gibt an ob Marx sich bewegt.
-		Wechsel erfolgt alle 15 Frames um ein Flackern zu vermeiden.
-		"""
-		if is_moving and not self.prev_is_moving:
-			# Bewegung gerade gestartet → sofort zum Lauf-Sprite wechseln
-			self.image           = self.lauf_bild
-			self.is_first_skin   = False
-			self.framecount_skin = 0
-			self.rect = self.image.get_rect(topleft=(self.x, self.y))
+    def move(self, dx, dy):
+        """
+        Move Marx by (dx, dy) pixels, clamped to the window borders.
+        The collision rect (self.rect) is kept in sync after every move.
+        """
+        # Only apply horizontal movement if Marx stays inside the window
+        if 0 < self.x + dx < self.screen_w - self.rect.width:
+            self.x += dx
+        # Only apply vertical movement if Marx stays inside the window
+        if 0 < self.y + dy < self.screen_h - self.rect.height:
+            self.y += dy
 
-		elif is_moving:
-			# Bereits in Bewegung → alle 15 Frames togglen
-			self.framecount_skin += 1
-			if self.framecount_skin >= 15:
-				self.image = self.stand_bild if not self.is_first_skin else self.lauf_bild
-				self.is_first_skin   = not self.is_first_skin
-				self.rect = self.image.get_rect(topleft=(self.x, self.y))
-				self.framecount_skin = 0
+        # Keep the collision rect aligned with the logical position
+        self.rect.topleft = (self.x, self.y)
 
-		else:
-			# Keine Bewegung → Idle-Sprite
-			self.image           = self.stand_bild
-			self.framecount_skin = 0
-			self.is_first_skin   = True
+    # -------------------------------------------------------------------------
+    # Drawing
+    # -------------------------------------------------------------------------
 
-		self.prev_is_moving = is_moving  # für nächsten Frame merken
+    def draw(self, screen):
+        """Draw Marx onto the screen.  Does nothing if Marx is dead."""
+        if self.alive:
+            screen.blit(self.image, (self.x, self.y))
 
-	def update(self):
-		"""Gibt den aktuellen Zustand zurück: (alive, (x, y))."""
-		return self.alive, (self.x, self.y)
+    # -------------------------------------------------------------------------
+    # Accessors
+    # -------------------------------------------------------------------------
 
-	def input_monitoring(self, keys, area, opponents):
-		"""
-		Verarbeitet Tastatureingaben für Bewegung und Angriff.
-		  keys      – aktueller Tastaturzustand (pygame.key.get_pressed())
-		  area      – DamageArea-Objekt, das den Angriffsbereich visualisiert
-		  opponents – Liste aktiver Gegner (für Kollisionsprüfung beim Angriff)
-		"""
-		# Bewegung mit Pfeiltasten (5 Pixel pro Frame)
-		if keys[pygame.K_LEFT]:  self.move(-5,  0)
-		if keys[pygame.K_RIGHT]: self.move( 5,  0)
-		if keys[pygame.K_UP]:    self.move( 0, -5)
-		if keys[pygame.K_DOWN]:  self.move( 0,  5)
+    def get_rect(self):
+        """Return the current collision rect (used by enemies and attack checks)."""
+        return self.rect
 
-		# Cooldown jeden Frame um 1 reduzieren; Angriffsbereich färben
-		if self.attack_cooldown > 0:
-			self.attack_cooldown -= 1
-			area.turnred()    # rot = noch auf Cooldown
-		else:
-			area.turnwhite()  # weiß = bereit zum Angriff
+    # -------------------------------------------------------------------------
+    # Animation
+    # -------------------------------------------------------------------------
 
-		# Angriff mit Leertaste (nur wenn kein Cooldown aktiv)
-		if keys[pygame.K_SPACE] and self.attack_cooldown == 0:
-			# Alle Gegner im Angriffsbereich sammeln
-			in_range = [o for o in opponents if o.rect.colliderect(area.getrect())]
-			if in_range:
-				# Zufällig einen treffen (verhindert immer denselben zu targeten)
-				in_range[randint(0, len(in_range) - 1)].getdamage(self.damage)
-			self.attack_cooldown = 30  # 30 Frames = 0,5 Sekunden bei 60 FPS
+    def tick_animation(self, is_moving):
+        """
+        Switch between the idle and run sprite based on movement state.
 
-	def get_damage(self, damage, damage_screen=None):
-		"""
-		Zieht damage von den Lebenspunkten ab.
-		Löst optional den Bildschirm-Rot-Effekt aus.
-		Tötet Marx wenn HP auf 0 oder darunter fallen.
-		"""
-		if self.alive:
-			self.health_points -= damage
-			if damage_screen:
-				damage_screen.trigger()          # roten Overlay-Effekt starten
-			if self.health_points <= 0:
-				self.dead()
+        Called once per frame.  Sprite switches happen every 15 frames to
+        avoid flickering.  When movement starts, the run sprite is applied
+        immediately (no delay).
 
-	def heal(self, amount):
-		"""
-		Heilt Marx um 'amount' HP, aber nie über max_health hinaus.
-		Funktioniert nur solange Marx lebt.
-		"""
-		if self.alive:
-			self.health_points = min(self.max_health, self.health_points + amount)
+        Parameters
+        ----------
+        is_moving : bool – True if any arrow key is currently held
+        """
+        if is_moving and not self.prev_is_moving:
+            # Movement just started → switch to run sprite immediately
+            self.image           = self.lauf_bild
+            self.is_first_skin   = False
+            self.framecount_skin = 0
+            self.rect = self.image.get_rect(topleft=(self.x, self.y))
 
-	def gethealth(self):
-		"""Gibt die aktuellen Lebenspunkte zurück (wird von HealthBar genutzt)."""
-		return self.health_points
+        elif is_moving:
+            # Still moving → toggle sprites every 15 frames
+            self.framecount_skin += 1
+            if self.framecount_skin >= 15:
+                self.image = self.stand_bild if not self.is_first_skin else self.lauf_bild
+                self.is_first_skin   = not self.is_first_skin
+                self.rect = self.image.get_rect(topleft=(self.x, self.y))
+                self.framecount_skin = 0
 
-	def get_exception_area(self):
-		"""
-		Berechnet den Bereich um Marx (quadratisch, Radius = exception_radius),
-		in dem Gegner nicht spawnen dürfen.
-		Rückgabe: (x_start, x_end, y_start, y_end)
-		"""
-		x, y = self.get_rect().center
-		return (x - self.exception_radius, x + self.exception_radius,
-		        y - self.exception_radius, y + self.exception_radius)
+        else:
+            # Not moving → always show the idle sprite
+            self.image           = self.stand_bild
+            self.framecount_skin = 0
+            self.is_first_skin   = True
+
+        # Remember this frame's movement state for the next frame's transition check
+        self.prev_is_moving = is_moving
+
+    # -------------------------------------------------------------------------
+    # Game State
+    # -------------------------------------------------------------------------
+
+    def update(self):
+        """
+        Return the current game state as a tuple: (alive, (x, y)).
+        Called every frame by the game loop to check whether Marx is still alive.
+        """
+        return self.alive, (self.x, self.y)
+
+    # -------------------------------------------------------------------------
+    # Input Handling
+    # -------------------------------------------------------------------------
+
+    def input_monitoring(self, keys, area, opponents):
+        """
+        Process keyboard input for movement and attacking.
+
+        Parameters
+        ----------
+        keys      – result of pygame.key.get_pressed() for the current frame
+        area      – damage_area object (used to colour the attack circle)
+        opponents – list of currently active enemy objects (for hit detection)
+        """
+        # Movement: 5 pixels per frame in the pressed direction
+        if keys[pygame.K_LEFT]:  self.move(-5,  0)
+        if keys[pygame.K_RIGHT]: self.move( 5,  0)
+        if keys[pygame.K_UP]:    self.move( 0, -5)
+        if keys[pygame.K_DOWN]:  self.move( 0,  5)
+
+        # Cooldown tick: count down by 1 each frame and colour the area accordingly
+        if self.attack_cooldown > 0:
+            self.attack_cooldown -= 1
+            area.turnred()    # red = attack on cooldown, cannot strike yet
+        else:
+            area.turnwhite()  # white = ready to attack
+
+        # Attack: SPACE bar, only when cooldown is 0
+        if keys[pygame.K_SPACE] and self.attack_cooldown == 0:
+            # Collect all enemies whose rect overlaps the attack circle rect
+            in_range = [o for o in opponents if o.rect.colliderect(area.getrect())]
+            if in_range:
+                # Pick one enemy at random to prevent always hitting the same target
+                in_range[randint(0, len(in_range) - 1)].getdamage(self.damage)
+            # Start the cooldown: 30 frames = 0.5 seconds at 60 FPS
+            self.attack_cooldown = 30
+
+    # -------------------------------------------------------------------------
+    # Combat
+    # -------------------------------------------------------------------------
+
+    def get_damage(self, damage, damage_screen=None):
+        """
+        Subtract damage from HP.  Optionally triggers the red screen flash.
+        If HP drops to 0 or below, Marx is marked as dead.
+
+        Parameters
+        ----------
+        damage        – amount of HP to remove
+        damage_screen – optional damage_screen instance to trigger the red flash
+        """
+        if self.alive:
+            self.health_points -= damage
+            if damage_screen:
+                damage_screen.trigger()   # start the red overlay effect
+            if self.health_points <= 0:
+                self.dead()
+
+    def heal(self, amount):
+        """
+        Restore 'amount' HP, but never above max_health.
+        Has no effect if Marx is already dead.
+        """
+        if self.alive:
+            self.health_points = min(self.max_health, self.health_points + amount)
+
+    def gethealth(self):
+        """Return current HP.  Used by health_bar to calculate the fill ratio."""
+        return self.health_points
+
+    def get_exception_area(self):
+        """
+        Return the square exclusion zone around Marx where enemies must not spawn.
+        The zone is centred on Marx's sprite centre with a radius of exception_radius.
+
+        Returns
+        -------
+        (x_start, x_end, y_start, y_end) as pixel coordinates
+        """
+        x, y = self.get_rect().center
+        r = self.exception_radius
+        return (x - r, x + r, y - r, y + r)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Kampf-Hilfsobjekte
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
+# Combat Helpers
+# =============================================================================
 
 class damage_area:
-	"""
-	Sichtbarer Angriffsbereich um Marx (halbtransparenter Kreis).
-	Wird rot während des Cooldowns und weiß wenn Marx angreifen kann.
-	Dient auch als Kollisionsrechteck für den Angriff.
-	"""
+    """
+    Visual attack circle drawn around Marx.
 
-	def __init__(self, origin):
-		"""
-		origin – das Objekt, dem die Area folgt (normalerweise marx_char).
-		"""
-		self.widthmulti   = 1    # Multiplikator für spätere Power-ups
-		self.damagemulti  = 1    # Schadens-Multiplikator (noch ungenutzt)
-		self.origin       = origin
-		self.normal_width = 150  # Grundradius in Pixeln
-		self.color = (255, 255, 255, 125)  # RGBA: Weiß, halbtransparent
+    The circle is white when Marx can attack and turns red while the cooldown
+    is active.  It also serves as the collision rectangle for attack hit tests.
 
-	def getparentposition(self):
-		"""Gibt die Mitte des verknüpften Objekts zurück."""
-		return self.origin.get_rect().center
+    The circle is drawn using its own SRCALPHA surface so transparency works
+    correctly on top of other sprites.
+    """
 
-	def drawrect(self, screen):
-		"""
-		Zeichnet den halbtransparenten Kreis auf den Screen.
-		Nutzt eine eigene Surface mit SRCALPHA damit die Transparenz funktioniert.
-		"""
-		radius = 200
-		# Rechteck zentriert auf Marx
-		target_rect = pygame.Rect(self.getparentposition(), (0, 0)).inflate(
-		              (radius * 2, radius * 2))
-		shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
-		pygame.draw.circle(shape_surf, self.color, (radius, radius), radius)
-		screen.blit(shape_surf, target_rect)
+    def __init__(self, origin):
+        """
+        Parameters
+        ----------
+        origin – the object the area follows (normally the marx instance)
+        """
+        self.widthmulti   = 1    # multiplier for the attack radius (for power-ups)
+        self.damagemulti  = 1    # damage multiplier (reserved for future power-ups)
+        self.origin       = origin
+        self.normal_width = 150  # base radius in pixels
+        self.color = (255, 255, 255, 125)   # RGBA: white, half-transparent
 
-	def getrect(self):
-		"""
-		Gibt das Kollisionsrechteck zurück (für Angriffsprüfung gegen Gegner).
-		Radius wird durch widthmulti skalierbar gehalten (z.B. für Power-ups).
-		"""
-		pos    = self.getparentposition()
-		radius = self.normal_width * self.widthmulti
-		return pygame.Rect(pos[0] - radius, pos[1] - radius, radius * 2, radius * 2)
+    def getparentposition(self):
+        """Return the centre coordinates of the tracked object."""
+        return self.origin.get_rect().center
 
-	def turnred(self):
-		"""Färbt den Kreis rot → zeigt aktiven Cooldown an."""
-		self.color = (255, 0, 0, 125)
+    def drawrect(self, screen):
+        """
+        Draw the semi-transparent circle onto the screen.
 
-	def turnwhite(self):
-		"""Färbt den Kreis weiß → Angriff ist wieder möglich."""
-		self.color = (255, 255, 255, 125)
+        A dedicated SRCALPHA surface is used so the circle's alpha channel is
+        rendered correctly even when it overlaps other sprites.
+        """
+        radius = 200
+        # Create a rect centred on Marx and inflate it to fit the circle
+        target_rect = pygame.Rect(self.getparentposition(), (0, 0)).inflate(
+                      (radius * 2, radius * 2))
+        # Draw on a transparent surface so the circle blends with what is below
+        shape_surf = pygame.Surface(target_rect.size, pygame.SRCALPHA)
+        pygame.draw.circle(shape_surf, self.color, (radius, radius), radius)
+        screen.blit(shape_surf, target_rect)
+
+    def getrect(self):
+        """
+        Return the rectangular collision area for attack hit tests.
+        The radius scales with widthmulti so power-ups can expand the range.
+        """
+        pos    = self.getparentposition()
+        radius = self.normal_width * self.widthmulti
+        return pygame.Rect(pos[0] - radius, pos[1] - radius, radius * 2, radius * 2)
+
+    def turnred(self):
+        """Colour the circle red to signal that Marx is on attack cooldown."""
+        self.color = (255, 0, 0, 125)
+
+    def turnwhite(self):
+        """Colour the circle white to signal that Marx can attack again."""
+        self.color = (255, 255, 255, 125)
 
 
 class damage_screen:
-	"""
-	Roter Bildschirm-Overlay-Effekt wenn Marx Schaden nimmt.
-	Erscheint sofort und klingt sanft über 'duration' Frames ab.
-	"""
+    """
+    Full-screen red overlay that fades out over ~0.33 seconds when Marx is hit.
 
-	def __init__(self):
-		self.duration = 20   # Effekt dauert 20 Frames (~0,33 Sek bei 60 FPS)
-		self.counter  = 0    # Zählt runter bis Effekt endet
+    trigger() resets the counter to its maximum; draw() decrements it every
+    frame and renders the overlay with alpha proportional to the remaining time.
+    """
 
-	def trigger(self):
-		"""Startet den Effekt (wird von Marx.get_damage() aufgerufen)."""
-		self.counter = self.duration
+    def __init__(self):
+        self.duration = 20   # total frames the effect lasts (20 / 60 fps ≈ 0.33 s)
+        self.counter  = 0    # frames remaining; 0 = invisible
 
-	def draw(self, screen):
-		"""
-		Zeichnet den Overlay über den gesamten Screen.
-		Muss jeden Frame aufgerufen werden; blendet sanft aus (Fade-out).
-		"""
-		if self.counter > 0:
-			self.counter -= 1
-		# Alpha proportional zum verbleibenden Counter → sanfter Fade-out
-		alpha = int(80 * self.counter / self.duration)
-		surf = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-		surf.fill((255, 0, 0, alpha))
-		screen.blit(surf, (0, 0))
+    def trigger(self):
+        """Start (or restart) the red flash effect.  Called by marx.get_damage()."""
+        self.counter = self.duration
+
+    def draw(self, screen):
+        """
+        Draw the red overlay.  Must be called every frame.
+        Alpha decreases linearly from 80 to 0 as the counter runs down.
+        """
+        if self.counter > 0:
+            self.counter -= 1   # count down even when not visible to other callers
+
+        # Alpha is proportional to the remaining counter: 80 at full, 0 at 0
+        alpha = int(80 * self.counter / self.duration)
+        surf  = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+        surf.fill((255, 0, 0, alpha))
+        screen.blit(surf, (0, 0))
 
 
 class health_bar:
-	"""
-	Lebensanzeige für beliebige Objekte (Marx oder Gegner).
-	Zeigt den aktuellen HP-Anteil als grünen Balken auf rotem Hintergrund.
-	Mit follow=True positioniert sie sich automatisch über dem Objekt.
-	"""
+    """
+    HP bar that can be attached to any game object with a gethealth() method.
 
-	def __init__(self, x, y, width, height, object, follow=False):
-		"""
-		x, y     – Startposition (wird bei follow=True ignoriert)
-		width/h  – Balkenbreite und -höhe in Pixeln
-		object   – das zu überwachende Objekt (muss gethealth() haben)
-		follow   – True: Bar folgt dem Objekt; False: feste Position
-		"""
-		self.x          = x
-		self.y          = y
-		self.width      = width
-		self.height     = height
-		self.max_health = object.gethealth()  # einmalig beim Erstellen gespeichert
-		self.object     = object
-		self.follow     = follow
+    Renders as a red background rectangle with a green foreground rectangle
+    whose width is proportional to the current HP.
 
-	def draw(self, screen):
-		"""
-		Zeichnet den Balken. Liest aktuelle HP jedes Frame neu aus.
-		Bei follow=True wird die Position dynamisch aus dem Objekt-Rect berechnet.
-		"""
-		hp = self.object.gethealth()
+    With follow=True the bar automatically positions itself above the object's
+    sprite so it stays attached to moving enemies.
+    """
 
-		if self.follow:
-			# 10px links vom Objekt-Rand, 12px über dem Kopf
-			self.x = self.object.rect.x - 10
-			self.y = self.object.rect.y - 12
+    def __init__(self, x, y, width, height, object, follow=False):
+        """
+        Parameters
+        ----------
+        x, y   – fixed position (ignored when follow=True)
+        width  – total bar width in pixels
+        height – bar height in pixels
+        object – the game object to track (must expose gethealth())
+        follow – if True, the bar follows object.rect automatically
+        """
+        self.x          = x
+        self.y          = y
+        self.width      = width
+        self.height     = height
+        self.max_health = object.gethealth()   # stored once at creation time
+        self.object     = object
+        self.follow     = follow
 
-		# Roter Hintergrund (volle Breite = maximales Leben)
-		pygame.draw.rect(screen, (255, 0, 0), (self.x, self.y, self.width, self.height))
-		# Grüner Vordergrund (proportionale Breite = aktuelles Leben)
-		pct = max(0, hp / self.max_health)  # max(0,...) verhindert negative Breite
-		pygame.draw.rect(screen, (0, 255, 0),
-		                 (self.x, self.y, self.width * pct, self.height))
+    def draw(self, screen):
+        """
+        Draw the health bar.  Re-reads current HP every frame.
+
+        When follow=True the position is computed from the object's rect so
+        the bar moves with the sprite.
+        """
+        hp = self.object.gethealth()
+
+        if self.follow:
+            # Position the bar 10 px to the left of and 12 px above the sprite
+            self.x = self.object.rect.x - 10
+            self.y = self.object.rect.y - 12
+
+        # Red background: represents the maximum (missing) health
+        pygame.draw.rect(screen, (255, 0, 0),
+                         (self.x, self.y, self.width, self.height))
+
+        # Green foreground: represents the current health fraction
+        pct = max(0, hp / self.max_health)   # clamp to [0, 1] so bar never goes negative
+        pygame.draw.rect(screen, (0, 255, 0),
+                         (self.x, self.y, self.width * pct, self.height))
