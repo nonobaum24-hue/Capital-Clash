@@ -12,7 +12,7 @@ def boss_fight(screen):
     from game_classes import marx, damage_area, damage_screen, health_bar
     from opp_classes import normal_opp, super_opp, mini_opp, SpawnManager
     from collectible_classes import collectible_manager
-    from boss_classes import boss_opp, punch_area
+    from boss_classes import boss_opp, punch_area, boss_projectile
     
     # ─────────────────────────────────────────────────────────────────────────────
     # Grundeinstellungen
@@ -80,10 +80,15 @@ def boss_fight(screen):
     clock   = pygame.time.Clock()
     running = True
 
-    
+    # ── Boss & Punch-Area initialisieren ────────────────────────────────────────
+    BOSS  = boss_opp()
+    punch = punch_area(BOSS)
 
-    punch = punch_area()
-    BOSS = boss_opp()
+    # Boss-Healthbar: links oben, 400px breit, 30px hoch
+    boss_bar = health_bar(width//2 - 200, 60, 400, 30, BOSS)
+
+    # Projektile-Liste für Phase 2 des Bosses
+    projectiles = []
 
     # ─────────────────────────────────────────────────────────────────────────────
     # Boss-Loop
@@ -125,7 +130,22 @@ def boss_fight(screen):
         # ── 5. Gegner updaten und zeichnen ────────────────────────────────────────
 
         # -- Boss-Bereich --------
-        BOSS.tick(marx_char, 0, punch)
+        # Boss ticken (Bewegung, Angriffe, Animation, Phasen)
+        BOSS.tick(marx_char, projectiles, punch)
+        
+        # Boss zeichnen
+        BOSS.draw(screen)
+        
+        # Punch-Area zeichnen (weißer/roter Kreis um Boss)
+        punch.draw(screen)
+
+        # Projektile ticken und zeichnen (Phase 2)
+        for proj in projectiles:
+            proj.tick(marx_char)
+            proj.draw(screen)
+        
+        # Tote Projektile entfernen
+        projectiles = [p for p in projectiles if p.alive]
 
         for opp in opponents:
             opp.followplayer(marx_char)          # auf Marx zubewegen
@@ -152,11 +172,20 @@ def boss_fight(screen):
         # ── 8. Marx Lebensanzeige ─────────────────────────────────────────────────
         # Ganz zum Schluss damit sie über allem anderen liegt
         marx_bar.draw(screen)
+        
+        # Boss Lebensanzeige
+        if BOSS.alive:
+            boss_bar.draw(screen)
 
         # ── 9. Tod-Check ──────────────────────────────────────────────────────────
         if not alive:
             print("Marx ist tot!")
             running = False   # Loop beim nächsten Durchlauf beenden
+        
+        # Boss-Tod-Check (Spieler hat gewonnen!)
+        if not BOSS.alive:
+            print("Boss besiegt! Gewonnen!")
+            running = False
 
         # ── 10. Events ────────────────────────────────────────────────────────────
         # Fenster-Schließen abfangen
@@ -167,6 +196,3 @@ def boss_fight(screen):
         # ── 11. Frame begrenzen & anzeigen ────────────────────────────────────────
         pygame.display.flip()   # fertigen Frame auf den Bildschirm bringen
         clock.tick(60)          # maximal 60 FPS (hält Spielgeschwindigkeit konstant)
-
-        if roundtick <= 0 and not opponents:
-            running = False
