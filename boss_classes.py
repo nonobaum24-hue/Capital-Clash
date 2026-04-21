@@ -464,6 +464,7 @@ class punch_area:
         red stays at 255, producing a clean white → red transition.
         """
         if self.active == False or self.max_ticks == 0:
+            self.ALPHA = 0  # Reset alpha when inactive
             return (255, 0, 0, self.ALPHA)
 
         progress   = (1 - (self.tick_count / self.max_ticks)) / 1.33   # 0.0 → ~0.75
