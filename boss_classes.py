@@ -300,31 +300,18 @@ class boss_opp:
         if self._cast_cd > 0:
             self._cast_cd -= 1
 
-    def _check_and_trigger_cast(self, projectiles):
+    def _check_and_trigger_cast(self):
         """
-        Trigger a projectile cast if Olaf is in Phase 2 and the cooldown is over.
-        Spawns a boss_projectile and starts the cast animation.
+        Trigger eine Impact-Area wenn Olaf in Phase 2 ist und der Cooldown vorbei.
+        Startet die Cast-Animation und aktiviert die Impact-Area mit Schaden.
         """
         if self.phase == 2 and self._cast_cd == 0:
             self._cast_active  = True
             self._cast_tick    = 0
             self._cast_cd      = self.CAST_COOLDOWN_BASE
-            # Spawn the projectile (it will wait CAST_DELAY frames before flying)
-            self._spawn_projectile(projectiles)
-
-    def get_target(self):
-        tx = self.player.x
-        ty = self.player.y
-        return tx, ty
-
-    def _check_and_trigger_cast(self):
-        """
-        Create a boss_projectile at Olaf's current centre position and add it
-        to the projectiles list.  The projectile flies to a random point near
-        Marx after the CAST_DELAY has elapsed.
-        """
-        self.impact_area.draw(self.screen)
-        if self.aoi.get_collision_rect
+            # Aktiviere die Impact-Area: sie wird an Marx's aktueller Position 
+            # eingefrostet und blendet sich rot ein
+            self.impact_area.activate(self.projectile_damage, delay_frames=self.CAST_DELAY)
 
     def _update_cast_animation(self):
         """
@@ -355,14 +342,13 @@ class boss_opp:
     # Main Tick (called every frame by boss_fight.py)
     # =========================================================================
 
-    def tick(self, player, projectiles, punch_area):
+    def tick(self, player, punch_area):
         """
         Per-frame update for the boss.  Called by boss_fight.py each iteration.
 
         Parameters
         ----------
         player      – the marx object
-        projectiles – list to append new boss_projectile objects to
         punch_area  – the punch_area instance that visualises and applies the hit
         """
         if not self.alive:
@@ -382,11 +368,13 @@ class boss_opp:
         self._update_punch_animation()
         punch_area.tick(player)   # tick punch_area so it counts down and deals damage
 
-        # 4. Ranged cast system (Phase 2 only)
+        # 4. Impact Area system (Phase 2 only)
+        # Die neue Impact-Area Animation und Schaden-Anwendung
         if self.phase == 2:
             self._update_cast_cooldown()
             self._check_and_trigger_cast()
             self._update_cast_animation()
+            self.impact_area.tick()   # tick impact_area so it counts down and deals damage
 
         # 5. Update the displayed sprite
         self.update_animation()
@@ -653,23 +641,120 @@ class boss_projectile:
             self.alive = False
 
 class impact_area:
-    def __init__(self, player):
-        super.__init__(player)
+	"""
+	Impact-Area: Ein roter Kreis erscheint auf der aktuellen Position des Gegners
+	und blendet sich langsam rot ein (wie punch_area).
+	
+	Wenn der Kreis voll eingefadet ist und Marx noch im Radius steht, wird der
+	Schaden angewendet. Die Position wird eingefrostet wenn die Area aktiviert wird,
+	sonst folgt sie immer dem Player.
+	
+	Das System wiederholt sich alle paar Sekunden (Cooldown-basiert).
+	"""
 
-    def draw(self, screen):
-        """
-        Draw the semi-transparent circle using the same SRCALPHA technique as
-        damage_area.drawrect():
-          1. Create a Surface with SRCALPHA (per-pixel alpha)
-          2. Draw the circle onto it with the current colour
-          3. Blit the surface onto the main screen
-        """
-        if self.active == False:
-            cx, cy = self.boss.get_center_position()
-        r      = self.RADIUS
-        color  = self._get_color()
+	RADIUS = 150		# Radius des Impactbereichs in Pixeln
+	ALPHA  = 0			# Aktuelle Alphavalue (0 = unsichtbar, 255 = vollständig opak)
 
-        target_rect = pygame.Rect(cx - r, cy - r, r * 2, r * 2)
-        shape_surf  = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
-        pygame.draw.circle(shape_surf, color, (r, r), r)
-        screen.blit(shape_surf, target_rect)
+	def __init__(self, player):
+		self.player       = player
+		self.active       = False		# Ist die Area gerade aktiv?
+		self.tick_count   = 0			# Verbleibende Frames bis zum Hit
+		self.max_ticks    = 0			# Speichert den Ausgangswert für Farbinterpolation
+		self.damage       = 0			# Schaden zum Anwenden wenn Countdown = 0
+		
+		# Eingefrorene Position (wenn inaktiv, folgt sie dem Player)
+		self.locked_x     = 0
+		self.locked_y     = 0
+
+	# ── Controls ─────────────────────────────────────────────────────────────
+
+	def activate(self, damage, delay_frames):
+		"""
+		Aktiviert die Impact-Area.
+		Wird ignoriert wenn eine Area bereits aktiv ist (kein Interrupt).
+
+		Parameter
+		---------
+		damage       – HP abgezogen von Marx wenn Countdown = 0
+		delay_frames – Frames bis der Hit angewendet wird
+		"""
+		if not self.active:
+			self.damage     = damage
+			self.tick_count = delay_frames
+			self.max_ticks  = delay_frames
+			self.active     = True
+			
+			# Position einfrieren: wo ist Marx jetzt?
+			self.locked_x = self.player.x
+			self.locked_y = self.player.y
+
+	def tick(self):
+		"""
+		Muss jeden Frame aufgerufen werden (vom Boss).
+		Zählt den Countdown runter; wenn 0 erreicht, prüft Kollision und wendet Schaden an.
+		"""
+		if not self.active:
+			return
+
+		if self.tick_count > 0:
+			self.tick_count -= 1		# Ein Frame näher zum Hit
+		else:
+			# Countdown abgelaufen → Schaden anwenden wenn Marx im Bereich
+			if self.player.get_rect().colliderect(self._get_collision_rect()):
+				self.player.get_damage(self.damage)
+			self.active = False		# Area ist vorbei
+
+	# ── Internal Helpers ─────────────────────────────────────────────────────
+
+	def _get_color(self):
+		"""
+		Berechnet die aktuelle Füllfarbe als RGBA Tuple.
+
+		Inaktiv           → transparentes Rot (255, 0, 0, ALPHA=0)
+		Aktiviert (Start) → Alpha langsam erhöhen
+		Kurz vor Impact   → Rot ca. 75% opak
+
+		Die Farbe übergeht von weiß zu rot während Alpha hochgeht.
+		"""
+		if self.active == False or self.max_ticks == 0:
+			self.ALPHA = 0		# Alpha zurücksetzen wenn inaktiv
+			return (255, 0, 0, self.ALPHA)
+
+		progress   = (1 - (self.tick_count / self.max_ticks)) / 1.33		# 0.0 → ~0.75
+		if not self.active:
+			progress = 0
+		self.ALPHA = int(255 * progress)
+		return (255, 0, 0, self.ALPHA)
+
+	def _get_collision_rect(self):
+		"""Gibt ein Rechteck centerd auf die eingefrorene Position zurück (für Hit-Detection)."""
+		# Wenn nicht aktiv, gibt die Position des Players zur Referenz
+		if self.active:
+			cx, cy = self.locked_x, self.locked_y
+		else:
+			cx, cy = self.player.x, self.player.y
+		
+		r = self.RADIUS
+		return pygame.Rect(cx - r, cy - r, r * 2, r * 2)
+
+	# ── Drawing ───────────────────────────────────────────────────────────────
+
+	def draw(self, screen):
+		"""
+		Zeichnet den semi-transparenten Kreis mit SRCALPHA-Technik:
+		  1. Surface mit SRCALPHA erstellen (Pro-Pixel Alpha)
+		  2. Kreis drauf zeichnen mit aktueller Farbe
+		  3. Surface auf den Screen blitten
+		"""
+		if not self.active:
+			return
+		
+		# Wenn aktiv, nutzen wir die eingefrorene Position
+		cx, cy = self.locked_x, self.locked_y
+		r      = self.RADIUS
+		color  = self._get_color()
+
+		target_rect = pygame.Rect(cx - r, cy - r, r * 2, r * 2)
+		shape_surf  = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+		pygame.draw.circle(shape_surf, color, (r, r), r)
+		screen.blit(shape_surf, target_rect)
