@@ -216,10 +216,10 @@ class marx:
 
     def update(self):
         """
-        Return the current game state as a tuple: (alive, (x, y)).
-        Called every frame by the game loop to check whether Marx is still alive.
+        Return whether Marx is still alive.
+        Called every frame by the game loop to check the game state.
         """
-        return self.alive, (self.x, self.y)
+        return self.alive
 
     # -------------------------------------------------------------------------
     # Input Handling
@@ -310,9 +310,7 @@ class marx:
         r = self.exception_radius
         return (x - r, x + r, y - r, y + r)
     
-    def get_center_position(self):
-        """Return the centre-point coordinates of Olaf's sprite."""
-        return self.rect.center
+
 
 
 # =============================================================================
@@ -337,7 +335,6 @@ class damage_area:
         origin – the object the area follows (normally the marx instance)
         """
         self.widthmulti   = 1    # multiplier for the attack radius (for power-ups)
-        self.damagemulti  = 1    # damage multiplier (reserved for future power-ups)
         self.origin       = origin
         self.normal_width = 150  # base radius in pixels
         self.color = (255, 255, 255, 125)   # RGBA: white, half-transparent

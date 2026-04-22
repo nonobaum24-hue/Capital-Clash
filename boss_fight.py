@@ -7,7 +7,7 @@
 #   - No timed enemy waves (SCHEDULE is empty)
 #   - The boss (BOSS) is a boss_opp instance with 1000 HP and two attack phases
 #   - A punch_area around the boss visualises and applies melee damage
-#   - In Phase 2 (HP ≤ 500) the boss also fires projectiles (boss_projectile)
+#   - In Phase 2 (HP ≤ 500) the boss also creates impact areas
 #   - A separate boss HP bar is shown at the top of the screen
 #
 # Win condition:  BOSS.alive becomes False  →  player wins
@@ -20,7 +20,7 @@ def boss_fight(screen, marxhealth):
     from game_classes import marx, damage_area, damage_screen, health_bar
     from opp_classes import normal_opp, super_opp, mini_opp, SpawnManager
     from collectible_classes import collectible_manager
-    from boss_classes import boss_opp, punch_area, boss_projectile, impact_area
+    from boss_classes import boss_opp, punch_area, impact_area
 
     print('bossfight')   # debug output to confirm the function was called
 
@@ -88,7 +88,7 @@ def boss_fight(screen, marxhealth):
 
     # Create the boss (Olaf) and the melee attack area around him
     aoi = impact_area(marx_char)
-    BOSS  = boss_opp(marx_char, aoi, screen)
+    BOSS  = boss_opp(marx_char, aoi)
     punch = punch_area(BOSS)
 
     # Boss HP bar: wider than Marx's bar (400 px) and slightly lower (y=60)
@@ -120,8 +120,8 @@ def boss_fight(screen, marxhealth):
         # Advance the animation sprite (idle ↔ run)
         marx_char.tick_animation(is_moving)
 
-        # alive = whether Marx survived this frame; _ = position (unused)
-        alive, _ = marx_char.update()
+        # Check whether Marx is still alive
+        alive = marx_char.update()
 
         # --- Step 4: Draw Marx and His Attack Circle -------------------------
         marx_area.drawrect(screen)   # white/red circle around Marx

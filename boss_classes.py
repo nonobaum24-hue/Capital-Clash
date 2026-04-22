@@ -1,11 +1,11 @@
 # =============================================================================
 # boss_classes.py  –  Boss Enemy Classes
 # =============================================================================
-# Contains the three classes that make up the boss fight against Olaf:
+# Contains the classes that make up the boss fight against Olaf:
 #
 #   boss_opp          – the boss character itself (movement, AI, phases, animations)
 #   punch_area        – melee attack circle around the boss (visual + hit detection)
-#   boss_projectile   – a projectile fired by the boss in Phase 2
+#   impact_area       – impact warning circle that marks where damage will happen
 # =============================================================================
 
 from game_classes import load_image, SCRIPT_DIR
@@ -25,17 +25,17 @@ class boss_opp:
     Phase 1  (1000 – 501 HP):
       - Moves toward Marx smoothly (idle / walk animation with rotation)
       - Melee punch attacks (3-frame punch animation) when Marx is close
-      - No projectiles
+      - No impact areas
 
     Phase 2  (500 – 0 HP):
       - All Phase 1 behaviour, PLUS:
-      - Fires projectiles (2-frame cast animation) on a cooldown
+      - Creates impact areas (2-frame cast animation) on a cooldown
 
     Animations:
       idle   – standing still (passive)
       walk   – moving (active during movement)
       punch  – 3-frame melee animation (triggered when in punch range)
-      cast   – 2-frame casting animation (Phase 2 only, before firing)
+      cast   – 2-frame casting animation (Phase 2 only, before impact area)
     """
 
     # ── Class-level constants (same for every boss_opp instance) ────────────
@@ -45,20 +45,19 @@ class boss_opp:
     PUNCH_COOLDOWN      = 120   # frames between two punch attacks (2 s at 60 FPS)
 
     PHASE_2_THRESHOLD   = 500   # HP at which Olaf enters Phase 2
-    CAST_COOLDOWN_BASE  = 180   # frames between projectile casts in Phase 2 (3 s)
-    CAST_DELAY          = 40    # frames of cast animation before the projectile spawns
+    CAST_COOLDOWN_BASE  = 180   # frames between impact area casts in Phase 2 (3 s)
+    CAST_DELAY          = 40    # frames of cast animation before the impact area activates
 
-    def __init__(self, player, aoi, screen):
+    def __init__(self, player, aoi):
         # ── HP & Damage ──────────────────────────────────────────────────────
         self.max_health         = 1000
         self.health_points      = self.max_health
         self.punch_damage       = 40   # HP removed per punch hit
-        self.projectile_damage  = 20   # HP removed per projectile hit
+        self.impact_damage      = 20   # HP removed per impact area hit
         self.alive              = True
 
         # ── Phase System ─────────────────────────────────────────────────────
         self.phase          = 1   # 1 or 2; transitions at PHASE_2_THRESHOLD
-        self.lifelong_tick  = 0   # total frames the boss has been alive
 
         # ── Punch System ─────────────────────────────────────────────────────
         self._punch_cd      = 0      # cooldown counter (decrements each frame)
@@ -73,7 +72,6 @@ class boss_opp:
         # ── Target ──────────────────────────────────────────────────────
         self.player = player
         self.impact_area = aoi
-        self.screen = screen
 
         # ── Animations ──────────────────────────────────────────────────────
         # All sprites are loaded at scale 0.5 (half of their original size)
@@ -102,7 +100,7 @@ class boss_opp:
         ]
 
         # Cast animation: 2 frames; played over 30 ticks (15 ticks per frame)
-        # Only used in Phase 2 when firing a projectile
+        # Only used in Phase 2 when creating impact areas
         self.anim_cast = [
             load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_1.png"), scale=self.scale),
             load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_2.png"), scale=self.scale),
@@ -139,7 +137,7 @@ class boss_opp:
             screen.blit(self.image, self.position)
 
     def get_rect(self):
-        """Return the collision rect (used by punch_area and projectile checks)."""
+        """Return the collision rect (used by punch_area and attack checks)."""
         return self.rect
 
     def get_center_position(self):
@@ -311,7 +309,7 @@ class boss_opp:
             self._cast_cd      = self.CAST_COOLDOWN_BASE
             # Aktiviere die Impact-Area: sie wird an Marx's aktueller Position 
             # eingefrostet und blendet sich rot ein
-            self.impact_area.activate(self.projectile_damage, delay_frames=self.CAST_DELAY)
+            self.impact_area.activate(self.impact_damage, delay_frames=self.CAST_DELAY)
 
     def _update_cast_animation(self):
         """
@@ -353,8 +351,6 @@ class boss_opp:
         """
         if not self.alive:
             return
-
-        self.lifelong_tick += 1
 
         # 1. Check whether Phase 2 should start
         self._check_phase()
@@ -491,154 +487,6 @@ class punch_area:
         screen.blit(shape_surf, target_rect)
 
 
-# =============================================================================
-# boss_projectile  –  Ranged Attack (Phase 2)
-# =============================================================================
-
-class boss_projectile:
-    """
-    Projectile fired by Olaf in Phase 2.
-
-    Lifecycle:
-      1. Spawns at the boss's position.
-      2. Waits for delay_frames (plays cast animation on the boss side).
-      3. Flies toward a random point near Marx at SPEED pixels per frame.
-      4. On arrival (within 20 px of target): explodes, checks collision, deals damage.
-      5. alive is set to False → removed from the list by boss_fight.py.
-    """
-
-    SPEED  = 3    # pixels per frame during flight
-    RADIUS = 30   # explosion radius used for hit detection
-
-    def __init__(self, start_x, start_y, damage, delay_frames):
-        """
-        Parameters
-        ----------
-        start_x, start_y – spawn position (Olaf's centre)
-        damage           – HP removed from Marx on a direct hit
-        delay_frames     – frames to wait before the projectile starts flying
-        """
-        self.start_x      = start_x
-        self.start_y      = start_y
-        self.x            = float(start_x)
-        self.y            = float(start_y)
-        self.damage       = damage
-        self.alive        = True
-        self.has_exploded = False
-
-        # Delay tracking
-        self.delay_frames = delay_frames
-        self.tick_count   = 0
-
-        # Target: a random point within ±200 px of the spawn position.
-        # This gives the projectile a spread pattern rather than always hitting
-        # the exact same spot.
-        offset_range  = 200
-        self.target_x = start_x + uniform(-offset_range, offset_range)
-        self.target_y = start_y + uniform(-offset_range, offset_range)
-
-        # Pre-compute the normalised direction vector scaled by SPEED
-        dx   = self.target_x - self.x
-        dy   = self.target_y - self.y
-        dist = (dx ** 2 + dy ** 2) ** 0.5
-        if dist > 0:
-            self.vx = (dx / dist) * self.SPEED
-            self.vy = (dy / dist) * self.SPEED
-        else:
-            self.vx = self.vy = 0   # edge case: spawn == target
-
-        # Load the projectile sprite (projectile.png)
-        try:
-            self.image = load_image(os.path.join(SCRIPT_DIR, "projectile.png"), scale=0.25)
-        except Exception as e:
-            print(f"Projektil-Textur nicht gefunden: {e}")
-            self.image = None
-
-        # Collision rect (updated every frame during flight)
-        if self.image:
-            self.rect = self.image.get_rect(topleft=(int(self.x), int(self.y)))
-        else:
-            self.rect = pygame.Rect(0, 0, 0, 0)
-
-    # ── Drawing ───────────────────────────────────────────────────────────────
-
-    def draw(self, screen):
-        """
-        Draw the projectile sprite.
-        Hidden during the delay phase (before flight starts) and after explosion.
-        """
-        if self.alive and self.tick_count >= self.delay_frames and self.image:
-            self.rect.topleft = (int(self.x), int(self.y))
-            screen.blit(self.image, self.rect)
-
-    # ── Accessors ─────────────────────────────────────────────────────────────
-
-    def get_rect(self):
-        """Return the collision rect."""
-        return self.rect
-
-    def get_center_position(self):
-        """Return the centre coordinates."""
-        return (int(self.x + self.rect.width // 2),
-                int(self.y + self.rect.height // 2))
-
-    # ── Main Tick ─────────────────────────────────────────────────────────────
-
-    def tick(self, player):
-        """
-        Per-frame update.  Called by boss_fight.py every iteration.
-
-        Parameters
-        ----------
-        player – the marx object (for collision check on explosion)
-        """
-        if not self.alive:
-            return
-
-        self.tick_count += 1
-
-        # During the delay phase: do nothing (boss plays cast animation)
-        if self.tick_count < self.delay_frames:
-            return
-
-        # --- Flight phase: move toward the target position -------------------
-        self.x += self.vx
-        self.y += self.vy
-        self.rect.topleft = (int(self.x), int(self.y))
-
-        # Check whether the target has been reached (within 20 px)
-        dx   = self.target_x - self.x
-        dy   = self.target_y - self.y
-        dist = (dx ** 2 + dy ** 2) ** 0.5
-
-        if dist < 20:
-            self._explode(player)   # target reached → explode
-
-    def _explode(self, player):
-        """
-        Handle the explosion at the target position.
-          1. Build an explosion rect centred on the target (radius = RADIUS)
-          2. Check whether Marx is inside that rect
-          3. Apply damage if hit
-          4. Mark the projectile as dead so it is removed from the list
-        """
-        if not self.has_exploded:
-            self.has_exploded = True
-
-            # Explosion area as a square centred on the target position
-            explosion_rect = pygame.Rect(
-                self.target_x - self.RADIUS,
-                self.target_y - self.RADIUS,
-                self.RADIUS * 2,
-                self.RADIUS * 2
-            )
-
-            # Deal damage if Marx is inside the explosion area
-            if player.get_rect().colliderect(explosion_rect):
-                player.get_damage(self.damage)
-
-            # Deactivate the projectile so boss_fight.py removes it from the list
-            self.alive = False
 
 class impact_area:
 	"""

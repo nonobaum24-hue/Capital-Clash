@@ -151,8 +151,8 @@ def mainloop(screen):
         # Advance the animation (idle ↔ run sprite toggle)
         marx_char.tick_animation(is_moving)
 
-        # alive = whether Marx is still alive; _ = position (not needed here)
-        alive, _ = marx_char.update()
+        # Check whether Marx is still alive
+        alive = marx_char.update()
 
         # --- Step 4: Draw Marx and His Attack Circle -------------------------
         marx_area.drawrect(screen)   # white/red circle around Marx
