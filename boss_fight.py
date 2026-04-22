@@ -20,7 +20,7 @@ def boss_fight(screen, marxhealth):
     from game_classes import marx, damage_area, damage_screen, health_bar
     from opp_classes import normal_opp, super_opp, mini_opp, SpawnManager
     from collectible_classes import collectible_manager
-    from boss_classes import boss_opp, punch_area, impact_area
+    from boss_classes import boss_opp, punch_area, impact_area, boss_projectile
 
     print('bossfight')   # debug output to confirm the function was called
 
@@ -94,6 +94,9 @@ def boss_fight(screen, marxhealth):
     # Boss HP bar: wider than Marx's bar (400 px) and slightly lower (y=60)
     boss_bar = health_bar(width//2 - 200, 60, 400, 30, BOSS)
 
+    # List for boss projectiles (populated during Phase 2)
+    projectiles = []
+
     # =========================================================================
     # Boss Game Loop
     # =========================================================================
@@ -132,7 +135,7 @@ def boss_fight(screen, marxhealth):
 
         # tick() handles: phase transitions, movement toward Marx, punch system,
         # impact area system (Phase 2), and animation updates.
-        BOSS.tick(marx_char, punch)
+        BOSS.tick(marx_char, projectiles, punch)
 
         # Draw Olaf's sprite
         BOSS.draw(screen)
@@ -142,6 +145,14 @@ def boss_fight(screen, marxhealth):
 
         # Draw the impact area (red circle that fades in when activated, Phase 2 only)
         aoi.draw(screen)
+
+        # Update and draw all active projectiles (Phase 2 only)
+        for proj in projectiles:
+            proj.tick()   # move projectile toward impact area
+            proj.draw(screen)     # draw if past the delay phase
+
+        # Remove projectiles that have arrived (alive = False)
+        projectiles = [p for p in projectiles if p.alive]
 
         # --- Step 8: Draw HP Bars (drawn last to stay on top) ----------------
         marx_bar.draw(screen)      # Marx's HP bar (always shown)

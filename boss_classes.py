@@ -6,6 +6,7 @@
 #   boss_opp          – the boss character itself (movement, AI, phases, animations)
 #   punch_area        – melee attack circle around the boss (visual + hit detection)
 #   impact_area       – impact warning circle that marks where damage will happen
+#   boss_projectile   – visual projectile that flies toward the impact area (aesthetic only)
 # =============================================================================
 
 from game_classes import load_image, SCRIPT_DIR
@@ -41,7 +42,7 @@ class boss_opp:
     # ── Class-level constants (same for every boss_opp instance) ────────────
 
     PUNCH_RANGE         = 150   # pixels: melee attack triggers below this distance
-    PUNCH_DELAY         = 60    # frames of wind-up before the punch hit is checked
+    PUNCH_DELAY         = 45    # frames of wind-up before the punch hit is checked (matches animation duration)
     PUNCH_COOLDOWN      = 120   # frames between two punch attacks (2 s at 60 FPS)
 
     PHASE_2_THRESHOLD   = 500   # HP at which Olaf enters Phase 2
@@ -298,10 +299,11 @@ class boss_opp:
         if self._cast_cd > 0:
             self._cast_cd -= 1
 
-    def _check_and_trigger_cast(self):
+    def _check_and_trigger_cast(self, projectiles):
         """
-        Trigger eine Impact-Area wenn Olaf in Phase 2 ist und der Cooldown vorbei.
+        Trigger eine Impact-Area und spawne ein Projektil wenn Olaf in Phase 2 ist und der Cooldown vorbei.
         Startet die Cast-Animation und aktiviert die Impact-Area mit Schaden.
+        Das Projektil fliegt nur visual zur Impact-Area Position (kein Schaden vom Projektil).
         """
         if self.phase == 2 and self._cast_cd == 0:
             self._cast_active  = True
@@ -310,6 +312,12 @@ class boss_opp:
             # Aktiviere die Impact-Area: sie wird an Marx's aktueller Position 
             # eingefrostet und blendet sich rot ein
             self.impact_area.activate(self.impact_damage, delay_frames=self.CAST_DELAY)
+            # Spawne ein visuelles Projektil (fliegt zur eingefrorenen Impact-Area Position)
+            proj = boss_projectile(self.position[0], self.position[1], 
+                                   target_x=self.impact_area.locked_x,
+                                   target_y=self.impact_area.locked_y,
+                                   delay_frames=self.CAST_DELAY)
+            projectiles.append(proj)
 
     def _update_cast_animation(self):
         """
@@ -340,13 +348,14 @@ class boss_opp:
     # Main Tick (called every frame by boss_fight.py)
     # =========================================================================
 
-    def tick(self, player, punch_area):
+    def tick(self, player, projectiles, punch_area):
         """
         Per-frame update for the boss.  Called by boss_fight.py each iteration.
 
         Parameters
         ----------
         player      – the marx object
+        projectiles – list to append new boss_projectile objects to
         punch_area  – the punch_area instance that visualises and applies the hit
         """
         if not self.alive:
@@ -368,7 +377,7 @@ class boss_opp:
         # Die neue Impact-Area Animation und Schaden-Anwendung
         if self.phase == 2:
             self._update_cast_cooldown()
-            self._check_and_trigger_cast()
+            self._check_and_trigger_cast(projectiles)
             self._update_cast_animation()
             self.impact_area.tick()   # tick impact_area so it counts down and deals damage
 
@@ -606,3 +615,106 @@ class impact_area:
 		shape_surf  = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
 		pygame.draw.circle(shape_surf, color, (r, r), r)
 		screen.blit(shape_surf, target_rect)
+
+
+# =============================================================================
+# boss_projectile  – Visual Projectile (Aesthetic Only)
+# =============================================================================
+
+class boss_projectile:
+	"""
+	Visuelles Projektil das von Olaf zur Impact-Area Position fliegt.
+	
+	Keine Schaden-Anwendung – der Schaden kommt von der Impact-Area.
+	Das Projektil ist nur optisch um die Cast-Animation zu unterstützen.
+
+	Lifecycle:
+	  1. Spawns at the boss's position.
+	  2. Waits for delay_frames (plays cast animation on the boss side).
+	  3. Flies toward the impact area's target position at SPEED pixels per frame.
+	  4. On arrival (within 20 px of target): disappears, no damage or collision.
+	  5. alive is set to False → removed from the list by boss_fight.py.
+	"""
+
+	SPEED  = 3    # pixels per frame during flight
+
+	def __init__(self, start_x, start_y, target_x, target_y, delay_frames):
+		"""
+		Parameters
+		----------
+		start_x, start_y – spawn position (Olaf's position)
+		target_x, target_y – destination (impact area's locked position)
+		delay_frames     – frames to wait before the projectile starts flying
+		"""
+		self.x            = float(start_x)
+		self.y            = float(start_y)
+		self.target_x     = float(target_x)
+		self.target_y     = float(target_y)
+		self.alive        = True
+
+		# Delay tracking
+		self.delay_frames = delay_frames
+		self.tick_count   = 0
+
+		# Pre-compute the normalised direction vector scaled by SPEED
+		dx   = self.target_x - self.x
+		dy   = self.target_y - self.y
+		dist = (dx ** 2 + dy ** 2) ** 0.5
+		if dist > 0:
+			self.vx = (dx / dist) * self.SPEED
+			self.vy = (dy / dist) * self.SPEED
+		else:
+			self.vx = self.vy = 0   # edge case: spawn == target
+
+		# Load the projectile sprite (projectile.png)
+		try:
+			self.image = load_image(os.path.join(SCRIPT_DIR, "projectile.png"), scale=0.25)
+		except Exception as e:
+			print(f"Projektil-Textur nicht gefunden: {e}")
+			self.image = None
+
+		# Collision rect (updated every frame during flight)
+		if self.image:
+			self.rect = self.image.get_rect(topleft=(int(self.x), int(self.y)))
+		else:
+			self.rect = pygame.Rect(0, 0, 0, 0)
+
+	# ── Drawing ──────────────────────────────────────────────────────────────
+
+	def draw(self, screen):
+		"""
+		Draw the projectile sprite.
+		Hidden during the delay phase (before flight starts) and after arrival.
+		"""
+		if self.alive and self.tick_count >= self.delay_frames and self.image:
+			self.rect.topleft = (int(self.x), int(self.y))
+			screen.blit(self.image, self.rect)
+
+	# ── Main Tick ────────────────────────────────────────────────────────────
+
+	def tick(self):
+		"""
+		Per-frame update.  Called by boss_fight.py every iteration.
+		Moves toward target; marks as dead on arrival.
+		"""
+		if not self.alive:
+			return
+
+		self.tick_count += 1
+
+		# During the delay phase: do nothing (boss plays cast animation)
+		if self.tick_count < self.delay_frames:
+			return
+
+		# --- Flight phase: move toward the target position -------------------
+		self.x += self.vx
+		self.y += self.vy
+		self.rect.topleft = (int(self.x), int(self.y))
+
+		# Check whether the target has been reached (within 20 px)
+		dx   = self.target_x - self.x
+		dy   = self.target_y - self.y
+		dist = (dx ** 2 + dy ** 2) ** 0.5
+
+		if dist < 20:
+			self.alive = False   # arrived → mark as dead, no collision check
