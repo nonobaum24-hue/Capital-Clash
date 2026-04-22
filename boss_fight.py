@@ -20,7 +20,7 @@ def boss_fight(screen, marxhealth):
     from game_classes import marx, damage_area, damage_screen, health_bar
     from opp_classes import normal_opp, super_opp, mini_opp, SpawnManager
     from collectible_classes import collectible_manager
-    from boss_classes import boss_opp, punch_area, boss_projectile
+    from boss_classes import boss_opp, punch_area, boss_projectile, impact_area
 
     print('bossfight')   # debug output to confirm the function was called
 
@@ -87,7 +87,8 @@ def boss_fight(screen, marxhealth):
     # =========================================================================
 
     # Create the boss (Olaf) and the melee attack area around him
-    BOSS  = boss_opp()
+    aoi = impact_area(marx_char)
+    BOSS  = boss_opp(marx_char, aoi, screen)
     punch = punch_area(BOSS)
 
     # Boss HP bar: wider than Marx's bar (400 px) and slightly lower (y=60)

@@ -48,7 +48,7 @@ class boss_opp:
     CAST_COOLDOWN_BASE  = 180   # frames between projectile casts in Phase 2 (3 s)
     CAST_DELAY          = 40    # frames of cast animation before the projectile spawns
 
-    def __init__(self):
+    def __init__(self, player, aoi, screen):
         # ── HP & Damage ──────────────────────────────────────────────────────
         self.max_health         = 1000
         self.health_points      = self.max_health
@@ -69,6 +69,11 @@ class boss_opp:
         self._cast_cd       = 0      # cooldown counter for casts
         self._cast_active   = False  # True while the cast animation is playing
         self._cast_tick     = 0      # frame counter within the current cast
+
+        # ── Target ──────────────────────────────────────────────────────
+        self.player = player
+        self.impact_area = aoi
+        self.screen = screen
 
         # ── Animations ──────────────────────────────────────────────────────
         # All sprites are loaded at scale 0.5 (half of their original size)
@@ -307,20 +312,19 @@ class boss_opp:
             # Spawn the projectile (it will wait CAST_DELAY frames before flying)
             self._spawn_projectile(projectiles)
 
-    def _spawn_projectile(self, projectiles):
+    def get_target(self):
+        tx = self.player.x
+        ty = self.player.y
+        return tx, ty
+
+    def _check_and_trigger_cast(self):
         """
         Create a boss_projectile at Olaf's current centre position and add it
         to the projectiles list.  The projectile flies to a random point near
         Marx after the CAST_DELAY has elapsed.
         """
-        cx, cy = self.get_center_position()
-        projectile = boss_projectile(
-            start_x=cx,
-            start_y=cy,
-            damage=self.projectile_damage,
-            delay_frames=self.CAST_DELAY
-        )
-        projectiles.append(projectile)
+        self.impact_area.draw(self.screen)
+        if self.aoi.get_collision_rect
 
     def _update_cast_animation(self):
         """
@@ -381,7 +385,7 @@ class boss_opp:
         # 4. Ranged cast system (Phase 2 only)
         if self.phase == 2:
             self._update_cast_cooldown()
-            self._check_and_trigger_cast(projectiles)
+            self._check_and_trigger_cast()
             self._update_cast_animation()
 
         # 5. Update the displayed sprite
@@ -647,3 +651,25 @@ class boss_projectile:
 
             # Deactivate the projectile so boss_fight.py removes it from the list
             self.alive = False
+
+class impact_area:
+    def __init__(self, player):
+        super.__init__(player)
+
+    def draw(self, screen):
+        """
+        Draw the semi-transparent circle using the same SRCALPHA technique as
+        damage_area.drawrect():
+          1. Create a Surface with SRCALPHA (per-pixel alpha)
+          2. Draw the circle onto it with the current colour
+          3. Blit the surface onto the main screen
+        """
+        if self.active == False:
+            cx, cy = self.boss.get_center_position()
+        r      = self.RADIUS
+        color  = self._get_color()
+
+        target_rect = pygame.Rect(cx - r, cy - r, r * 2, r * 2)
+        shape_surf  = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+        pygame.draw.circle(shape_surf, color, (r, r), r)
+        screen.blit(shape_surf, target_rect)

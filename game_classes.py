@@ -309,6 +309,10 @@ class marx:
         x, y = self.get_rect().center
         r = self.exception_radius
         return (x - r, x + r, y - r, y + r)
+    
+    def get_center_position(self):
+        """Return the centre-point coordinates of Olaf's sprite."""
+        return self.rect.center
 
 
 # =============================================================================
