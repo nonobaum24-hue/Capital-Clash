@@ -74,6 +74,10 @@ def mainloop(screen):
     # Red full-screen flash triggered whenever Marx takes damage
     dmg_scr   = damage_screen()
 
+    #music
+    pygame.mixer.music.load("music/Arbeiterfront_8-bit.mp3")
+    pygame.mixer.music.play(2, 0)  # Loop the music 2 times (3 total plays), starting at 0 seconds 
+
     # =========================================================================
     # Setup: Enemy Spawn Schedule (SCHEDULE)
     # =========================================================================
