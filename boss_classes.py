@@ -12,7 +12,7 @@
 from game_classes import load_image, SCRIPT_DIR
 import os
 import pygame
-from random import uniform
+from random import uniform, randint
 
 
 # =============================================================================
@@ -46,8 +46,8 @@ class boss_opp:
     PUNCH_COOLDOWN      = 120   # frames between two punch attacks (2 s at 60 FPS)
 
     PHASE_2_THRESHOLD   = 500   # HP at which Olaf enters Phase 2
-    CAST_COOLDOWN_BASE  = 180   # frames between impact area casts in Phase 2 (3 s)
-    CAST_DELAY          = 40    # frames of cast animation before the impact area activates
+    CAST_COOLDOWN_BASE  = randint(150, 250)   # frames between impact area casts in Phase 2 (3 s)
+    CAST_DELAY          = 60*1.5  # frames of cast animation before the impact area activates
 
     def __init__(self, player, aoi):
         # ── HP & Damage ──────────────────────────────────────────────────────
