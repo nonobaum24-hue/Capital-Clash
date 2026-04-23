@@ -58,11 +58,13 @@ OPTIONS = {
             'game_classes',
             'opp_classes',
             'collectible_classes',
+            'resource_path',
         ],
         'resources': DATA_FILES,
         'iconfile': None,  # You can add an icon file here later if you want
         'plist': {
             'NSPrincipalClass': 'NSApplication',
+            'CFBundleIdentifier': 'org.capitalclash.game',
         },
     }
 }

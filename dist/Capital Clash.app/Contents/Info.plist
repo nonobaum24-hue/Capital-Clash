@@ -24,7 +24,7 @@
 	<key>CFBundleIconFile</key>
 	<string>PythonApplet.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.pythonmac.unspecified.CapitalClash</string>
+	<string>org.capitalclash.game</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

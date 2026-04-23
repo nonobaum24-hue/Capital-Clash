@@ -13,6 +13,7 @@ from game_classes import load_image, SCRIPT_DIR
 import os
 import pygame
 from random import uniform, randint
+from resource_path import get_resource_path
 
 
 # =============================================================================
@@ -76,35 +77,34 @@ class boss_opp:
 
         # ── Animations ──────────────────────────────────────────────────────
         # All sprites are loaded at scale 0.5 (half of their original size)
-        script_dir = SCRIPT_DIR
 
         # Idle animation: single frame shown when Olaf is standing still
 
         self.scale = 2
 
         self.anim_idle = load_image(
-            os.path.join(script_dir, "olaf", "idle_olaf", "idle_olaf.png"),
+            get_resource_path("olaf/idle_olaf/idle_olaf.png"),
             scale=self.scale
         )
 
         # Walk animation: single frame shown when Olaf is moving
         self.anim_walk = load_image(
-            os.path.join(script_dir, "olaf", "walk_olaf", "walk_olaf.png"),
+            get_resource_path("olaf/walk_olaf/walk_olaf.png"),
             scale=self.scale
         )
 
         # Punch animation: 3 frames; played over 45 ticks (15 ticks per frame)
         self.anim_punch = [
-            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_1.png"), scale=self.scale),
-            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_2.png"), scale=self.scale),
-            load_image(os.path.join(script_dir, "olaf", "punch_olaf", "punch_olaf_3.png"), scale=self.scale),
+            load_image(get_resource_path("olaf/punch_olaf/punch_olaf_1.png"), scale=self.scale),
+            load_image(get_resource_path("olaf/punch_olaf/punch_olaf_2.png"), scale=self.scale),
+            load_image(get_resource_path("olaf/punch_olaf/punch_olaf_3.png"), scale=self.scale),
         ]
 
         # Cast animation: 2 frames; played over 30 ticks (15 ticks per frame)
         # Only used in Phase 2 when creating impact areas
         self.anim_cast = [
-            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_1.png"), scale=self.scale),
-            load_image(os.path.join(script_dir, "olaf", "cast_olaf", "cast_olaf_2.png"), scale=self.scale),
+            load_image(get_resource_path("olaf/cast_olaf/cast_olaf_1.png"), scale=self.scale),
+            load_image(get_resource_path("olaf/cast_olaf/cast_olaf_2.png"), scale=self.scale),
         ]
 
         # Start with the idle sprite
@@ -668,7 +668,7 @@ class boss_projectile:
 
 		# Load the projectile sprite (projectile.png)
 		try:
-			self.image = load_image(os.path.join(SCRIPT_DIR, "projectile.png"), scale=0.25)
+			self.image = load_image(get_resource_path("projectile.png"), scale=0.25)
 		except Exception as e:
 			print(f"Projektil-Textur nicht gefunden: {e}")
 			self.image = None

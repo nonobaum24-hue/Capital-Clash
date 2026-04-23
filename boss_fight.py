@@ -36,20 +36,19 @@ def boss_fight(screen, marxhealth):
     pygame.display.set_caption("Capital Crush")
 
     # Music
-    #music
-    pygame.mixer.music.load("music/the_red_army_is_the_strongest.mp3")
+    from resource_path import get_resource_path
+    music_path = get_resource_path("music/the_red_army_is_the_strongest.mp3")
+    pygame.mixer.music.load(music_path)
     pygame.mixer.music.play(-1, 0)  # Loop the music indefinitely, starting at 0 seconds
 
     # =========================================================================
     # Setup: Asset Paths
     # =========================================================================
 
-    # Build absolute paths relative to this file so the game works regardless
-    # of the current working directory.
-    script_dir  = os.path.dirname(os.path.abspath(__file__))
-    marx_path   = os.path.join(script_dir, "marx1.png")   # Marx idle sprite
-    marx_path2  = os.path.join(script_dir, "marx2.png")   # Marx run sprite
-    floor_path  = os.path.join(script_dir, "floor.png")   # background image
+    # Build absolute paths using resource_path for both dev and packaged modes
+    marx_path   = get_resource_path("marx1.png")   # Marx idle sprite
+    marx_path2  = get_resource_path("marx2.png")   # Marx run sprite
+    floor_path  = get_resource_path("floor.png")   # background image
 
     # =========================================================================
     # Setup: Background Image

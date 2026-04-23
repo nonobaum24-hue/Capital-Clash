@@ -1,4 +1,5 @@
 from game_classes import health_bar, load_image, SCRIPT_DIR
+from resource_path import get_resource_path
 from random import randint, uniform
 import pygame
 import os
@@ -172,8 +173,8 @@ class normal_opp(opponent):
 		self.speed  = 3 + uniform(-0.5, 0.5)  # leichte Zufallsvariation
 		self.damage = 15
 
-		self.image1 = load_image(os.path.join(SCRIPT_DIR, "normal_opp1.png"), scale=0.28)
-		self.image2 = load_image(os.path.join(SCRIPT_DIR, "normal_opp2.png"), scale=0.28)
+		self.image1 = load_image(get_resource_path("normal_opp1.png"), scale=0.28)
+		self.image2 = load_image(get_resource_path("normal_opp2.png"), scale=0.28)
 		self.image  = self.image1
 		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
@@ -194,8 +195,8 @@ class super_opp(opponent):
 		self.speed  = 2 + uniform(-0.5, 0.5)
 		self.damage = 25
 
-		self.image1 = load_image(os.path.join(SCRIPT_DIR, "super_opp1.png"), scale=1)
-		self.image2 = load_image(os.path.join(SCRIPT_DIR, "super_opp2.png"), scale=1)
+		self.image1 = load_image(get_resource_path("super_opp1.png"), scale=1)
+		self.image2 = load_image(get_resource_path("super_opp2.png"), scale=1)
 		self.image  = self.image1
 		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
@@ -215,8 +216,8 @@ class mini_opp(opponent):
 		self.speed  = 4 + uniform(-0.5, 0.5)
 		self.damage = 5
 
-		self.image1 = load_image(os.path.join(SCRIPT_DIR, "mini_opp1.png"), scale=0.09)
-		self.image2 = load_image(os.path.join(SCRIPT_DIR, "mini_opp2.png"), scale=0.09)
+		self.image1 = load_image(get_resource_path("mini_opp1.png"), scale=0.09)
+		self.image2 = load_image(get_resource_path("mini_opp2.png"), scale=0.09)
 		self.image  = self.image1
 		self.rect   = self.image.get_rect(topleft=(self.x, self.y))
 
