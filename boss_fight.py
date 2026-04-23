@@ -35,6 +35,11 @@ def boss_fight(screen, marxhealth):
     screen = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Capital Crush")
 
+    # Music
+    #music
+    pygame.mixer.music.load("music/the_red_army_is_the_strongest.mp3")
+    pygame.mixer.music.play(-1, 0)  # Loop the music indefinitely, starting at 0 seconds
+
     # =========================================================================
     # Setup: Asset Paths
     # =========================================================================
@@ -177,3 +182,5 @@ def boss_fight(screen, marxhealth):
         # --- Step 11: Frame Cap and Display ----------------------------------
         pygame.display.flip()   # push finished frame to the monitor
         clock.tick(60)          # cap at 60 FPS
+    #music stop
+    pygame.mixer.music.stop()

@@ -76,7 +76,7 @@ def mainloop(screen):
 
     #music
     pygame.mixer.music.load("music/Arbeiterfront_8-bit.mp3")
-    pygame.mixer.music.play(2, 0)  # Loop the music 2 times (3 total plays), starting at 0 seconds 
+    pygame.mixer.music.play(-1, 0)  # Loop the music indefinitely, starting at 0 seconds
 
     # =========================================================================
     # Setup: Enemy Spawn Schedule (SCHEDULE)
@@ -214,4 +214,5 @@ def mainloop(screen):
             elif endtick == 0:
                 running = False
                 return True, marx_char.health_points
-        
+    #music stop
+    pygame.mixer.music.stop()
