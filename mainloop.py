@@ -194,14 +194,14 @@ def mainloop(screen):
         if not alive:
             print("Marx ist tot!")
             running = False   # exit the loop on the next iteration
-            return False
+            return False, marx_char.health_points
 
         # --- Step 10: Event Handling -----------------------------------------
         # Handle the window close button
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-                return False
+                return False, marx_char.health_points
 
         # --- Step 11: Frame Cap and Display ----------------------------------
         pygame.display.flip()   # push the finished frame to the monitor
