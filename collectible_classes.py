@@ -16,7 +16,6 @@
 from game_classes import load_image, SCRIPT_DIR
 import os
 from random import randint, uniform
-from resource_path import get_resource_path
 
 
 class Collectible:
@@ -93,19 +92,19 @@ class Collectible:
 class Heal(Collectible):
     """Heals Marx by 15 HP.  Dropped by MiniOpp enemies."""
     def __init__(self, x, y, player):
-        super().__init__(x, y, get_resource_path("heal.png"), "health", player)
+        super().__init__(x, y, os.path.join(SCRIPT_DIR, "assets", "collectibles", "heal.png"), "health", player)
 
 
 class Aoe(Collectible):
     """Deals 30 damage to all active enemies.  Dropped by NormalOpp enemies."""
     def __init__(self, x, y, player):
-        super().__init__(x, y, get_resource_path("aoe.png"), "aoe", player)
+        super().__init__(x, y, os.path.join(SCRIPT_DIR, "assets", "collectibles", "aoe.png"), "aoe", player)
 
 
 class Revive(Collectible):
     """Raises max HP by 10 and fully restores HP.  Dropped by SuperOpp enemies."""
     def __init__(self, x, y, player):
-        super().__init__(x, y, get_resource_path("revive.png"), "revive", player)
+        super().__init__(x, y, os.path.join(SCRIPT_DIR, "assets", "collectibles", "revive.png"), "revive", player)
 
 
 # =============================================================================

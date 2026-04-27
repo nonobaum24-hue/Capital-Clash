@@ -13,7 +13,6 @@ from game_classes import load_image, SCRIPT_DIR
 import os
 import pygame
 from random import uniform, randint
-from resource_path import get_resource_path
 
 
 # =============================================================================
@@ -41,21 +40,32 @@ class boss_opp:
     """
 
     # ── Class-level constants (same for every boss_opp instance) ────────────
+    # === PUNCH ATTACK ===
+    PUNCH_RANGE         = 150           # pixels: melee attack triggers below this distance
+    PUNCH_DELAY         = 45            # frames: wind-up time before punch lands
+    PUNCH_COOLDOWN      = 120           # frames: time between punch attacks
+    PUNCH_DAMAGE        = 40            # HP removed per punch hit
+    PUNCH_FRAMES        = 3             # number of animation frames
+    PUNCH_FRAME_DUR     = 15            # frames per animation frame
 
-    PUNCH_RANGE         = 150   # pixels: melee attack triggers below this distance
-    PUNCH_DELAY         = 45    # frames of wind-up before the punch hit is checked (matches animation duration)
-    PUNCH_COOLDOWN      = 120   # frames between two punch attacks (2 s at 60 FPS)
-
-    PHASE_2_THRESHOLD   = 500   # HP at which Olaf enters Phase 2
-    CAST_COOLDOWN_BASE  = randint(150, 250)   # frames between impact area casts in Phase 2 (3 s)
-    CAST_DELAY          = 60*1.5  # frames of cast animation before the impact area activates
+    # === PHASE 2 - CAST/IMPACT ATTACK ===
+    PHASE_2_THRESHOLD   = 500           # HP at which boss enters Phase 2
+    CAST_COOLDOWN_BASE  = (150, 250)    # (min, max) frames between casts
+    CAST_DELAY          = 90            # frames: animation delay before impact area activates
+    CAST_FRAMES         = 2             # number of animation frames
+    CAST_FRAME_DUR      = 30            # frames per animation frame
+    
+    # === PROJECTILE ===
+    PROJECTILE_SPEED    = 5             # pixels per frame during flight
+    PROJECTILE_SPAWN_DLY = 30           # frames: delay before projectile spawns after cast
+    IMPACT_DAMAGE       = 20            # HP removed per impact area hit
 
     def __init__(self, player, aoi):
         # ── HP & Damage ──────────────────────────────────────────────────────
         self.max_health         = 1000
         self.health_points      = self.max_health
-        self.punch_damage       = 40   # HP removed per punch hit
-        self.impact_damage      = 20   # HP removed per impact area hit
+        self.punch_damage       = self.PUNCH_DAMAGE
+        self.impact_damage      = self.IMPACT_DAMAGE
         self.alive              = True
 
         # ── Phase System ─────────────────────────────────────────────────────
@@ -77,35 +87,42 @@ class boss_opp:
 
         # ── Animations ──────────────────────────────────────────────────────
         # All sprites are loaded at scale 0.5 (half of their original size)
+        script_dir = SCRIPT_DIR
 
         # Idle animation: single frame shown when Olaf is standing still
 
         self.scale = 2
 
         self.anim_idle = load_image(
-            get_resource_path("olaf/idle_olaf/idle_olaf.png"),
+            os.path.join(script_dir, "assets", "animations", "olaf", "idle_olaf", "idle_olaf.png"),
             scale=self.scale
         )
 
         # Walk animation: single frame shown when Olaf is moving
         self.anim_walk = load_image(
-            get_resource_path("olaf/walk_olaf/walk_olaf.png"),
+            os.path.join(script_dir, "assets", "animations", "olaf", "walk_olaf", "walk_olaf.png"),
             scale=self.scale
         )
 
         # Punch animation: 3 frames; played over 45 ticks (15 ticks per frame)
         self.anim_punch = [
-            load_image(get_resource_path("olaf/punch_olaf/punch_olaf_1.png"), scale=self.scale),
-            load_image(get_resource_path("olaf/punch_olaf/punch_olaf_2.png"), scale=self.scale),
-            load_image(get_resource_path("olaf/punch_olaf/punch_olaf_3.png"), scale=self.scale),
+            load_image(os.path.join(script_dir, "assets", "animations", "olaf", "punch_olaf", "punch_olaf_1.png"), scale=self.scale),
+            load_image(os.path.join(script_dir, "assets", "animations", "olaf", "punch_olaf", "punch_olaf_2.png"), scale=self.scale),
+            load_image(os.path.join(script_dir, "assets", "animations", "olaf", "punch_olaf", "punch_olaf_3.png"), scale=self.scale),
         ]
 
         # Cast animation: 2 frames; played over 30 ticks (15 ticks per frame)
         # Only used in Phase 2 when creating impact areas
         self.anim_cast = [
-            load_image(get_resource_path("olaf/cast_olaf/cast_olaf_1.png"), scale=self.scale),
-            load_image(get_resource_path("olaf/cast_olaf/cast_olaf_2.png"), scale=self.scale),
+            load_image(os.path.join(script_dir, "assets", "animations", "olaf", "cast_olaf", "cast_olaf_1.png"), scale=self.scale),
+            load_image(os.path.join(script_dir, "assets", "animations", "olaf", "cast_olaf", "cast_olaf_2.png"), scale=self.scale),
         ]
+        
+        # Precalculate animation durations - SYNCED MIT DELAYS!
+        # Punch-Animation dauert GENAU so lange wie PUNCH_DELAY
+        self.punch_anim_duration = self.PUNCH_DELAY
+        # Cast-Animation dauert GENAU so lange wie CAST_DELAY
+        self.cast_anim_duration = self.CAST_DELAY
 
         # Start with the idle sprite
         self.image = self.anim_idle
@@ -225,15 +242,17 @@ class boss_opp:
         """
         # -- Punch animation takes highest priority ----------------------------
         if self._punch_active:
-            # 3 sprites spread over 60 frames (20 frames per sprite)
-            frame_idx  = min(2, self._punch_tick // 20)
+            # Spread punch frames evenly over PUNCH_DELAY
+            frame_duration = self.punch_anim_duration / len(self.anim_punch)
+            frame_idx = min(len(self.anim_punch) - 1, int(self._punch_tick / frame_duration))
             self.image = self.anim_punch[frame_idx]
             return
 
         # -- Cast animation takes second priority -----------------------------
         if self._cast_active:
-            # 2 sprites spread over 30 frames (15 frames per sprite)
-            frame_idx  = min(1, self._cast_tick // 15)
+            # Spread cast frames evenly over CAST_DELAY
+            frame_duration = self.cast_anim_duration / len(self.anim_cast)
+            frame_idx = min(len(self.anim_cast) - 1, int(self._cast_tick / frame_duration))
             self.image = self.anim_cast[frame_idx]
             return
 
@@ -280,13 +299,14 @@ class boss_opp:
     def _update_punch_animation(self):
         """
         Advance the punch animation tick.
-        Deactivates the punch after 45 frames (3 sprites × 15 frames each).
+        Deactivates the punch after punch_anim_duration frames.
+        Duration syncs automatically with PUNCH_DELAY!
         """
         if not self._punch_active:
             return
 
         self._punch_tick += 1
-        if self._punch_tick >= 45:
+        if self._punch_tick >= self.punch_anim_duration:
             self._punch_active = False
             self._punch_tick   = 0
 
@@ -315,20 +335,20 @@ class boss_opp:
             # Spawne ein visuelles Projektil (fliegt zur eingefrorenen Impact-Area Position)
             proj = boss_projectile(self.position[0], self.position[1], 
                                    target_x=self.impact_area.locked_x,
-                                   target_y=self.impact_area.locked_y,
-                                   delay_frames=self.CAST_DELAY)
+                                   target_y=self.impact_area.locked_y)
             projectiles.append(proj)
 
     def _update_cast_animation(self):
         """
         Advance the cast animation tick.
-        Deactivates the cast after 30 frames (2 sprites × 15 frames each).
+        Deactivates the cast after cast_anim_duration frames.
+        Duration syncs automatically with CAST_DELAY!
         """
         if not self._cast_active:
             return
 
         self._cast_tick += 1
-        if self._cast_tick >= 30:
+        if self._cast_tick >= self.cast_anim_duration:
             self._cast_active = False
             self._cast_tick   = 0
 
@@ -630,21 +650,21 @@ class boss_projectile:
 
 	Lifecycle:
 	  1. Spawns at the boss's position.
-	  2. Waits for delay_frames (plays cast animation on the boss side).
+	  2. Waits for PROJECTILE_SPAWN_DELAY (cast animation plays).
 	  3. Flies toward the impact area's target position at SPEED pixels per frame.
 	  4. On arrival (within 20 px of target): disappears, no damage or collision.
 	  5. alive is set to False → removed from the list by boss_fight.py.
 	"""
 
-	SPEED  = 3    # pixels per frame during flight
+	SPEED  = 5                           # pixels per frame during flight
+	SPAWN_DELAY = 30                    # frames: delay before projectile starts flying
 
-	def __init__(self, start_x, start_y, target_x, target_y, delay_frames):
+	def __init__(self, start_x, start_y, target_x, target_y):
 		"""
 		Parameters
 		----------
 		start_x, start_y – spawn position (Olaf's position)
 		target_x, target_y – destination (impact area's locked position)
-		delay_frames     – frames to wait before the projectile starts flying
 		"""
 		self.x            = float(start_x)
 		self.y            = float(start_y)
@@ -652,8 +672,7 @@ class boss_projectile:
 		self.target_y     = float(target_y)
 		self.alive        = True
 
-		# Delay tracking
-		self.delay_frames = delay_frames
+		# Delay tracking - waits before starting to move
 		self.tick_count   = 0
 
 		# Pre-compute the normalised direction vector scaled by SPEED
@@ -668,7 +687,7 @@ class boss_projectile:
 
 		# Load the projectile sprite (projectile.png)
 		try:
-			self.image = load_image(get_resource_path("projectile.png"), scale=0.25)
+			self.image = load_image(os.path.join(SCRIPT_DIR, "assets", "effects", "projectile.png"), scale=0.25)
 		except Exception as e:
 			print(f"Projektil-Textur nicht gefunden: {e}")
 			self.image = None
@@ -684,9 +703,9 @@ class boss_projectile:
 	def draw(self, screen):
 		"""
 		Draw the projectile sprite.
-		Hidden during the delay phase (before flight starts) and after arrival.
+		Hidden during the spawn delay phase (before flight starts) and after arrival.
 		"""
-		if self.alive and self.tick_count >= self.delay_frames and self.image:
+		if self.alive and self.tick_count >= self.SPAWN_DELAY and self.image:
 			self.rect.topleft = (int(self.x), int(self.y))
 			screen.blit(self.image, self.rect)
 
@@ -703,7 +722,7 @@ class boss_projectile:
 		self.tick_count += 1
 
 		# During the delay phase: do nothing (boss plays cast animation)
-		if self.tick_count < self.delay_frames:
+		if self.tick_count < self.SPAWN_DELAY:
 			return
 
 		# --- Flight phase: move toward the target position -------------------

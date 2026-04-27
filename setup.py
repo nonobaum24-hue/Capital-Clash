@@ -5,44 +5,26 @@ APP = ['game.py']
 
 # Data files that need to be included in the bundle
 DATA_FILES = [
-    # Images for the game UI and sprites
-    'marx.png',
-    'marx1.png',
-    'marx2.png',
-    'floor.png',
-    'projectile.png',
-    'aoe.png',
-    'heal.png',
-    'revive.png',
-    
-    # Opponent sprites
-    'normal_opp1.png',
-    'normal_opp2.png',
-    'mini_opp1.png',
-    'mini_opp2.png',
-    'super_opp1.png',
-    'super_opp2.png',
-    
-    # Boss sprites
-    'marx1.png',
-    'marx2.png',
-    
-    # Olaf sprites and animations (from olaf folder)
-    ('olaf', ['olaf/origin.png.zip', 'olaf/spritesheet.png.zip']),
-    ('olaf/idle_olaf', ['olaf/idle_olaf/idle_olaf.png']),
-    ('olaf/walk_olaf', ['olaf/walk_olaf/walk_olaf.png']),
-    ('olaf/punch_olaf', [
-        'olaf/punch_olaf/punch_olaf_1.png',
-        'olaf/punch_olaf/punch_olaf_2.png',
-        'olaf/punch_olaf/punch_olaf_3.png'
+    # Assets folder structure
+    ('assets/characters', ['assets/characters/logo.png', 'assets/characters/marx.png', 'assets/characters/marx1.png', 'assets/characters/marx2.png']),
+    ('assets/environment', ['assets/environment/floor.png']),
+    ('assets/enemies/normal', ['assets/enemies/normal/normal_opp1.png', 'assets/enemies/normal/normal_opp2.png']),
+    ('assets/enemies/super', ['assets/enemies/super/super_opp1.png', 'assets/enemies/super/super_opp2.png']),
+    ('assets/enemies/mini', ['assets/enemies/mini/mini_opp1.png', 'assets/enemies/mini/mini_opp2.png']),
+    ('assets/collectibles', ['assets/collectibles/heal.png', 'assets/collectibles/aoe.png', 'assets/collectibles/revive.png']),
+    ('assets/effects', ['assets/effects/projectile.png']),
+    ('assets/animations/olaf/idle_olaf', ['assets/animations/olaf/idle_olaf/idle_olaf.png']),
+    ('assets/animations/olaf/walk_olaf', ['assets/animations/olaf/walk_olaf/walk_olaf.png']),
+    ('assets/animations/olaf/punch_olaf', [
+        'assets/animations/olaf/punch_olaf/punch_olaf_1.png',
+        'assets/animations/olaf/punch_olaf/punch_olaf_2.png',
+        'assets/animations/olaf/punch_olaf/punch_olaf_3.png'
     ]),
-    ('olaf/cast_olaf', [
-        'olaf/cast_olaf/cast_olaf_1.png',
-        'olaf/cast_olaf/cast_olaf_2.png'
+    ('assets/animations/olaf/cast_olaf', [
+        'assets/animations/olaf/cast_olaf/cast_olaf_1.png',
+        'assets/animations/olaf/cast_olaf/cast_olaf_2.png'
     ]),
-    
-    # Music and audio
-    ('music', ['music/Arbeiterfront_8-Bit.mp3', 'music/the_red_army_is_the_strongest.mp3']),
+    ('assets/music', ['assets/music/Arbeiterfront_8-Bit.mp3', 'assets/music/the_red_army_is_the_strongest.mp3']),
 ]
 
 # Options for py2app
@@ -58,7 +40,6 @@ OPTIONS = {
             'game_classes',
             'opp_classes',
             'collectible_classes',
-            'resource_path',
         ],
         'resources': DATA_FILES,
         'iconfile': None,  # You can add an icon file here later if you want
