@@ -44,7 +44,7 @@ class boss_opp:
     PUNCH_RANGE         = 150           # pixels: melee attack triggers below this distance
     PUNCH_DELAY         = 45            # frames: wind-up time before punch lands
     PUNCH_COOLDOWN      = 120           # frames: time between punch attacks
-    PUNCH_DAMAGE        = 40            # HP removed per punch hit
+    PUNCH_DAMAGE        = 35            # HP removed per punch hit
     PUNCH_FRAMES        = 3             # number of animation frames
     PUNCH_FRAME_DUR     = 15            # frames per animation frame
 
