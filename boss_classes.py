@@ -41,7 +41,7 @@ class boss_opp:
 
     # ── Class-level constants (same for every boss_opp instance) ────────────
     # === PUNCH ATTACK ===
-    PUNCH_RANGE         = 150           # pixels: melee attack triggers below this distance
+    PUNCH_RANGE         = 200           # pixels: melee attack triggers below this distance
     PUNCH_DELAY         = 45            # frames: wind-up time before punch lands
     PUNCH_COOLDOWN      = 120           # frames: time between punch attacks
     PUNCH_DAMAGE        = 35            # HP removed per punch hit
@@ -530,7 +530,7 @@ class impact_area:
 	Das System wiederholt sich alle paar Sekunden (Cooldown-basiert).
 	"""
 
-	RADIUS = 150		# Radius des Impactbereichs in Pixeln
+	RADIUS = 80		# Radius des Impactbereichs in Pixeln
 	ALPHA  = 0			# Aktuelle Alphavalue (0 = unsichtbar, 255 = vollständig opak)
 
 	def __init__(self, player):
