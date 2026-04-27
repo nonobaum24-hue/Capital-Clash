@@ -30,11 +30,13 @@ print('erfolgreich gestartet')   # debug output – start menu finished
 # --- Phase 2: Main Game Loop ---
 # Runs until either the 60-second round ends with no enemies left (player
 # wins the round) or Marx's HP drops to 0 (player dies).
+ 
+ 
+alive, health = mainloop(screen)
 
-#alive, health = mainloop(screen)
+# alive = True
+# health = 100
 
-alive = True
-health = 100
 
 # --- Phase 3: Boss Fight ---
 # Same screen is reused. The loop ends when BOSS.alive becomes False (player
