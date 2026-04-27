@@ -424,7 +424,7 @@ class punch_area:
     for Marx's attack circle.
     """
 
-    RADIUS = 150   # radius of the attack circle in pixels
+    RADIUS = 200   # radius of the attack circle in pixels
     ALPHA  = 0     # current alpha value (0 = invisible, 255 = fully opaque)
 
     def __init__(self, boss):
