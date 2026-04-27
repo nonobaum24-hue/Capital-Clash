@@ -328,7 +328,8 @@ class boss_opp:
         if self.phase == 2 and self._cast_cd == 0:
             self._cast_active  = True
             self._cast_tick    = 0
-            self._cast_cd      = self.CAST_COOLDOWN_BASE
+            # Set cooldown to a random value between min and max
+            self._cast_cd      = randint(self.CAST_COOLDOWN_BASE[0], self.CAST_COOLDOWN_BASE[1])
             # Aktiviere die Impact-Area: sie wird an Marx's aktueller Position 
             # eingefrostet und blendet sich rot ein
             self.impact_area.activate(self.impact_damage, delay_frames=self.CAST_DELAY)
