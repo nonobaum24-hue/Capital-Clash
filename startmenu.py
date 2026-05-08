@@ -42,6 +42,10 @@ def startmenu():
     running = True
 
     while running:
+        screen.fill((0, 0, 0))            # black fill prevents ghost frames
+        if floor_img:
+            screen.blit(floor_img, (0, 0))
+
         strt = strt_btn.draw(screen)  # draw the start button on the screen
         if strt:
             running = False  # Exit the loop if the start button is clicked
