@@ -48,7 +48,6 @@ def startmenu():
         screen.fill((0, 0, 0))            # black fill prevents ghost frames
         if floor_img:
             screen.blit(floor_img, (0, 0))
-
         scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)  # surface for drawing the menu
         scrn_surf.fill((*game_settings.background_color, game_settings.background_opacity))  # fill with dark gray background
         screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
