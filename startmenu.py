@@ -12,6 +12,7 @@
 def startmenu():
     import os
     import pygame
+    from start_classes import start_button
 
     # Window dimensions – must match the values used in mainloop() and boss_fight()
     # so the screen surface stays compatible across all phases.
@@ -39,7 +40,7 @@ def startmenu():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False  # Exit the loop if the window is closed
-        running = False
+        
         pygame.display.flip()  # update the display to show the button
 
     # Return the screen surface so the caller (game.py) can pass it on to
