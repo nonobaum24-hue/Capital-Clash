@@ -30,12 +30,12 @@ class button:
         return (self.x <= pos[0] <= self.x + self.width) and (self.y <= pos[1] <= self.y + self.height)
     
 class start_button(button):
-    def __init__(self):
+    def __init__(self, screen_w, screen_h):
         super().__init__()  # call the base class constructor
         self.width = 200
         self.height = 80
-        self.x = 1250 // 2 - self.width // 2  # center horizontally
-        self.y = 720 // 2 - self.height // 2  # center vertically
+        self.x = screen_w // 2 - self.width // 2  # center horizontally
+        self.y = screen_h // 2 - self.height // 2  # center vertically
         self.text = "Start Game"
 
     def check_click(self):

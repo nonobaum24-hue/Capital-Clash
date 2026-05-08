@@ -22,13 +22,17 @@ def mainloop(screen):
     from game_classes import marx, damage_area, damage_screen, health_bar
     from opp_classes import normal_opp, super_opp, mini_opp, SpawnManager
     from collectible_classes import collectible_manager
+    from settings import settings
+
+    # Load settings
+    game_settings = settings()
 
     # =========================================================================
     # Setup: Window / Display
     # =========================================================================
 
-    width  = 1250   # window width in pixels
-    height = 720    # window height in pixels
+    width  = game_settings.width
+    height = game_settings.height
 
     # =========================================================================
     # Setup: Asset Paths
@@ -59,7 +63,10 @@ def mainloop(screen):
     # =========================================================================
 
     # Player character placed at the centre of the screen
-    marx_char = marx(width // 2, height // 2, marx_path, marx_path2)
+    marx_char = marx(width // 2, height // 2, marx_path, marx_path2, 
+                     scale=game_settings.player_scale, 
+                     health_points=game_settings.player_health,
+                     screen_w=width, screen_h=height)
 
     # Marx's HP bar: centred at top of screen, 200 px wide, 20 px tall
     marx_bar  = health_bar(width//2 - 100, height - 40, 200, 20, marx_char)
@@ -73,7 +80,7 @@ def mainloop(screen):
     #music
     music_path = os.path.join(script_dir, "assets", "music", "Arbeiterfront_8-Bit.mp3")
     pygame.mixer.music.load(music_path)
-    pygame.mixer.music.set_volume(0.3)  # 30% volume
+    pygame.mixer.music.set_volume(game_settings.music_volume)
     pygame.mixer.music.play(-1, 0)  # Loop the music indefinitely, starting at 0 seconds
 
     # =========================================================================
@@ -116,9 +123,9 @@ def mainloop(screen):
     # List of currently alive enemies on the field
     opponents     = []
 
-    # Round timer: 3600 frames = 60 seconds at 60 FPS; decrements every frame
-    roundtick     = 3600
-    endtick = 60*7 #am Ende 7 Sekunden Zeit bevor Bossfight
+    # Round timer: decrements every frame
+    roundtick     = game_settings.round_ticks
+    endtick       = game_settings.end_tick_buffer * game_settings.fps
 
     clock   = pygame.time.Clock()
     running = True

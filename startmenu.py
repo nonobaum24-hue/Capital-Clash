@@ -13,16 +13,19 @@ def startmenu():
     import os
     import pygame
     from start_classes import start_button
+    from settings import settings
 
-    # Window dimensions – must match the values used in mainloop() and boss_fight()
-    # so the screen surface stays compatible across all phases.
-    width  = 1250   # window width in pixels
-    height = 720    # window height in pixels
+    # Load settings
+    game_settings = settings()
+
+    # Window dimensions from settings
+    width  = game_settings.width
+    height = game_settings.height
 
     # Initialise pygame and create the display window
     pygame.init()
     screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption("Capital Crush")   # title bar text
+    pygame.display.set_caption(game_settings.title)   # title bar text
 
     script_dir  = os.path.dirname(os.path.abspath(__file__))
     floor_path  = os.path.join(script_dir, "assets", "environment", "floor.png")   # background image
@@ -34,10 +37,10 @@ def startmenu():
         floor_img = None   # None → screen.fill((0,0,0)) serves as fallback
 
     scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)  # surface for drawing the menu
-    scrn_surf.fill((30, 30, 30, 100))  # fill with dark gray background
+    scrn_surf.fill((*game_settings.background_color, game_settings.background_opacity))  # fill with dark gray background
     screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
 
-    strt_btn = start_button()  # create an instance of the start button
+    strt_btn = start_button(width, height)  # create an instance of the start button, passing window dimensions
 
     running = True
 
@@ -47,7 +50,7 @@ def startmenu():
             screen.blit(floor_img, (0, 0))
 
         scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)  # surface for drawing the menu
-        scrn_surf.fill((30, 30, 30, 100))  # fill with dark gray background
+        scrn_surf.fill((*game_settings.background_color, game_settings.background_opacity))  # fill with dark gray background
         screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
 
         strt = strt_btn.draw(screen)  # draw the start button on the screen

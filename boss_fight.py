@@ -21,26 +21,30 @@ def boss_fight(screen, marxhealth):
     from opp_classes import normal_opp, super_opp, mini_opp, SpawnManager
     from collectible_classes import collectible_manager
     from boss_classes import boss_opp, punch_area, impact_area, boss_projectile
+    from settings import settings
 
     print('bossfight')   # debug output to confirm the function was called
+
+    # Load settings
+    game_settings = settings()
 
     # =========================================================================
     # Setup: Window / Display (same dimensions as mainloop.py)
     # =========================================================================
 
-    width  = 1250   # window width in pixels
-    height = 720    # window height in pixels
+    width  = game_settings.width
+    height = game_settings.height
 
     pygame.init()
     screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption("Capital Crush")
+    pygame.display.set_caption(game_settings.title)
 
     # Music
     #music
     script_dir  = os.path.dirname(os.path.abspath(__file__))
     music_path = os.path.join(script_dir, "assets", "music", "the_red_army_is_the_strongest.mp3")
     pygame.mixer.music.load(music_path)
-    pygame.mixer.music.set_volume(0.3)  # 30% volume
+    pygame.mixer.music.set_volume(game_settings.music_volume)
     pygame.mixer.music.play(-1, 0)  # Loop the music indefinitely, starting at 0 seconds
 
     # =========================================================================
@@ -70,7 +74,9 @@ def boss_fight(screen, marxhealth):
     # =========================================================================
 
     # Player character centred on screen
-    marx_char = marx(width // 2, height // 2, marx_path, marx_path2)
+    marx_char = marx(width // 2, height // 2, marx_path, marx_path2,
+                     scale=game_settings.player_scale,
+                     screen_w=width, screen_h=height)
     marx_char.health_points = marxhealth
 
     # Marx HP bar: centred at top, 200 px wide, 20 px tall
@@ -84,7 +90,7 @@ def boss_fight(screen, marxhealth):
 
 
     # Round timer (kept for API compatibility with SpawnManager)
-    roundtick     = 3600
+    roundtick     = game_settings.round_ticks
 
     clock   = pygame.time.Clock()
     running = True

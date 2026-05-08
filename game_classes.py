@@ -14,10 +14,14 @@
 import os
 import pygame
 from random import randint, uniform
+from settings import settings
 
 # =============================================================================
 # Module-level Constants
 # =============================================================================
+
+# Load default game settings
+_DEFAULT_SETTINGS = settings()
 
 # Absolute path to the directory that contains this script.
 # Used to build asset paths that work regardless of the working directory.
@@ -80,18 +84,28 @@ class marx:
       - Toggling between idle and run sprites based on movement state
     """
 
-    def __init__(self, x, y, idle_path, run_path, scale=0.25,
-                 health_points=100, screen_w=1250, screen_h=720):
+    def __init__(self, x, y, idle_path, run_path, scale=None,
+                 health_points=None, screen_w=None, screen_h=None):
         """
         Parameters
         ----------
         x, y           – starting position (top-left corner of the sprite)
         idle_path      – file path for the standing/idle sprite
         run_path       – file path for the running sprite
-        scale          – scale factor applied to both sprites (default 0.25)
-        health_points  – starting HP; also used as the initial max_health
-        screen_w/h     – window dimensions for movement clamping and spawn logic
+        scale          – scale factor applied to both sprites (default from settings)
+        health_points  – starting HP; also used as the initial max_health (default from settings)
+        screen_w/h     – window dimensions for movement clamping and spawn logic (default from settings)
         """
+        # Use defaults from settings if not provided
+        if scale is None:
+            scale = _DEFAULT_SETTINGS.player_scale
+        if health_points is None:
+            health_points = _DEFAULT_SETTINGS.player_health
+        if screen_w is None:
+            screen_w = _DEFAULT_SETTINGS.width
+        if screen_h is None:
+            screen_h = _DEFAULT_SETTINGS.height
+            
         self.x = x
         self.y = y
         self.alive = True
@@ -99,11 +113,11 @@ class marx:
         self.scale          = scale
         self.health_points  = health_points
         self.max_health     = health_points   # upper HP cap; raised by Revive collectibles
-        self.damage         = 30              # damage per attack hit
+        self.damage         = _DEFAULT_SETTINGS.player_attack_damage
 
         # Minimum safe distance around Marx where enemies are not allowed to spawn.
         # Prevents enemies from spawning directly on top of the player.
-        self.exception_radius = 150
+        self.exception_radius = _DEFAULT_SETTINGS.player_exception_radius
 
         # Window boundaries used for movement clamping and spawn-exclusion zone
         self.screen_w = screen_w
@@ -235,11 +249,12 @@ class marx:
         area      – damage_area object (used to colour the attack circle)
         opponents – list of currently active enemy objects (for hit detection)
         """
-        # Movement: 5 pixels per frame in the pressed direction
-        if keys[pygame.K_LEFT]:  self.move(-5,  0)
-        if keys[pygame.K_RIGHT]: self.move( 5,  0)
-        if keys[pygame.K_UP]:    self.move( 0, -5)
-        if keys[pygame.K_DOWN]:  self.move( 0,  5)
+        # Movement: pixels per frame in the pressed direction (from settings)
+        move_speed = _DEFAULT_SETTINGS.player_speed
+        if keys[pygame.K_LEFT]:  self.move(-move_speed,  0)
+        if keys[pygame.K_RIGHT]: self.move( move_speed,  0)
+        if keys[pygame.K_UP]:    self.move( 0, -move_speed)
+        if keys[pygame.K_DOWN]:  self.move( 0,  move_speed)
 
         # Cooldown tick: count down by 1 each frame and colour the area accordingly
         if self.attack_cooldown > 0:
@@ -261,8 +276,8 @@ class marx:
                 # Fighting the boss (boss_opp instance)
                 if opponents.rect.colliderect(area.getrect()):
                     opponents.getdamage(self.damage)
-            # Start the cooldown: 30 frames = 0.5 seconds at 60 FPS
-            self.attack_cooldown = 30
+            # Start the cooldown (from settings)
+            self.attack_cooldown = _DEFAULT_SETTINGS.player_attack_cooldown
 
     # -------------------------------------------------------------------------
     # Combat
