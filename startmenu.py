@@ -23,17 +23,26 @@ def startmenu():
     screen = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Capital Crush")   # title bar text
 
+    scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)  # surface for drawing the menu
+    scrn_surf.fill((30, 30, 30, 100))  # fill with dark gray background
+    screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
+
+    strt_btn = start_button()  # create an instance of the start button
+
     running = True
 
     while running:
-        # TODO: This is where the start menu UI would be drawn.
-        # Possible future additions:
-        #   - "Start Game" button
-        #   - Settings (volume, key bindings)
-        #   - Skin / character selection
-        # For now the menu is skipped immediately by setting running = False.
+        strt = strt_btn.draw(screen)  # draw the start button on the screen
+        if strt:
+            running = False  # Exit the loop if the start button is clicked
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False  # Exit the loop if the window is closed
         running = False
+        pygame.display.flip()  # update the display to show the button
 
     # Return the screen surface so the caller (game.py) can pass it on to
     # mainloop() and boss_fight() – avoids reopening the window.
+    del scrn_surf  # clean up the menu surface as it's no longer needed
     return screen
