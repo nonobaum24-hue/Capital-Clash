@@ -30,10 +30,6 @@ def mainloop(screen):
     width  = 1250   # window width in pixels
     height = 720    # window height in pixels
 
-    pygame.init()
-    screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption("Capital Crush")
-
     # =========================================================================
     # Setup: Asset Paths
     # =========================================================================

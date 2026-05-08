@@ -24,6 +24,15 @@ def startmenu():
     screen = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Capital Crush")   # title bar text
 
+    script_dir  = os.path.dirname(os.path.abspath(__file__))
+    floor_path  = os.path.join(script_dir, "assets", "environment", "floor.png")   # background image
+    try:
+        floor_img = pygame.image.load(floor_path).convert_alpha()
+        floor_img = pygame.transform.scale(floor_img, (width, height))   # fit to window
+    except Exception as e:
+        print(f"Floor nicht gefunden: {e}")
+        floor_img = None   # None → screen.fill((0,0,0)) serves as fallback
+
     scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)  # surface for drawing the menu
     scrn_surf.fill((30, 30, 30, 100))  # fill with dark gray background
     screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
