@@ -46,6 +46,10 @@ def startmenu():
         if floor_img:
             screen.blit(floor_img, (0, 0))
 
+        scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)  # surface for drawing the menu
+        scrn_surf.fill((30, 30, 30, 100))  # fill with dark gray background
+        screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
+
         strt = strt_btn.draw(screen)  # draw the start button on the screen
         if strt:
             running = False  # Exit the loop if the start button is clicked
