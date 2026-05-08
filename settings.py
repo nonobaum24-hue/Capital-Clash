@@ -1,7 +1,8 @@
 class settings:
     def __init__(self):
         # Window settings
-        self.width = 1250                   # window width in pixels
+        #self.width = 1250                   # window width in pixels
+        self.width = 1700
         self.height = 720                   # window height in pixels
         self.title = "Capital Crush"        # window title
         
