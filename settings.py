@@ -21,7 +21,7 @@ class settings:
         
         # Audio settings
         self.master_volume = 1              # master volume (0.0 to 1.0)
-        self.music_volume = 0.3             # music volume (0.0 to 1.0)
+        self.music_volume = 1             # music volume (0.0 to 1.0)
         self.sfx_volume = 1                 # sound effects volume (0.0 to 1.0)
         
         # Display settings

@@ -44,7 +44,7 @@ def boss_fight(screen, marxhealth):
     script_dir  = os.path.dirname(os.path.abspath(__file__))
     music_path = os.path.join(script_dir, "assets", "music", "the_red_army_is_the_strongest.mp3")
     pygame.mixer.music.load(music_path)
-    pygame.mixer.music.set_volume(game_settings.music_volume)
+    pygame.mixer.music.set_volume(game_settings.music_volume*0.3)
     pygame.mixer.music.play(-1, 0)  # Loop the music indefinitely, starting at 0 seconds
 
     # =========================================================================
