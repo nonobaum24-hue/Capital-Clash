@@ -1,6 +1,9 @@
 import pygame
 import os
 
+from settings import settings
+from setting_menu import setting_loop
+
 # =============================================================================
 # start_classes.py  –  Classes for Capital Clash
 # =============================================================================
@@ -42,3 +45,16 @@ class start_button(button):
         if pygame.mouse.get_pressed()[0] and self.is_clicked(pygame.mouse.get_pos()):
             return True
         return False
+    
+class settings_button(button):
+    def __innit__(self, screen_w, screen_h):
+        super().__init__()  # call the base class constructor
+        self.width = 200
+        self.height = 80
+        self.x = screen_w // 2 - self.width // 2  # center horizontally
+        self.y = screen_h // 2 + self.height  # position below the start button
+        self.text = "Settings"
+
+    def check_click(self):
+        if pygame.mouse.get_pressed()[0] and self.is_clicked(pygame.mouse.get_pos()):
+            setting_loop()  # Open the settings menu
