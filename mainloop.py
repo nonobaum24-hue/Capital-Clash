@@ -16,7 +16,7 @@
 # window is reused across all game phases.
 # =============================================================================
 
-def mainloop(screen):
+def mainloop(screen, settings):
     import os
     import pygame
     from game_classes import marx, damage_area, damage_screen, health_bar
@@ -25,7 +25,7 @@ def mainloop(screen):
     from settings import settings
 
     # Load settings
-    game_settings = settings()
+    game_settings = settings
 
     # =========================================================================
     # Setup: Window / Display

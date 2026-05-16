@@ -14,7 +14,7 @@
 # Lose condition: marx.alive becomes False  →  player loses
 # =============================================================================
 
-def boss_fight(screen, marxhealth):
+def boss_fight(screen, marxhealth, settings):
     import pygame
     import os
     from game_classes import marx, damage_area, damage_screen, health_bar
@@ -26,7 +26,7 @@ def boss_fight(screen, marxhealth):
     print('bossfight')   # debug output to confirm the function was called
 
     # Load settings
-    game_settings = settings()
+    game_settings = settings
 
     # =========================================================================
     # Setup: Window / Display (same dimensions as mainloop.py)
