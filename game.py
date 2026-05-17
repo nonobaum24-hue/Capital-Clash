@@ -20,14 +20,14 @@ from boss_fight import boss_fight
 from startmenu import startmenu
 from settings import settings
 
-settings = settings()  # Load settings from file or use defaults
+game_settings = settings()  # Load settings from file or use defaults
 
 # --- Phase 1: Start Menu ---
 # startmenu() initialises pygame, opens the game window and waits until the
 # player decides to start.  It returns the Screen surface so we can hand the
 # same window to the following phases.
 
-screen = startmenu(settings)
+screen = startmenu(game_settings)
 
 print('erfolgreich gestartet')   # debug output – start menu finished
 
@@ -36,7 +36,7 @@ print('erfolgreich gestartet')   # debug output – start menu finished
 # wins the round) or Marx's HP drops to 0 (player dies).
 
 
-alive, health = mainloop(screen, settings)
+alive, health = mainloop(screen, game_settings)
 
 # alive = True
 # health = 100
@@ -46,7 +46,7 @@ alive, health = mainloop(screen, settings)
 # Same screen is reused. The loop ends when BOSS.alive becomes False (player
 # wins) or marx.alive becomes False (player loses).
 if alive:
-    boss_fight(screen, health, settings)
+    boss_fight(screen, health, game_settings)
 
 # --- Shutdown ---
 # pygame.quit() must be called exactly once after all game phases are done.

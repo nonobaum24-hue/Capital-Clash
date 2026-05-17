@@ -26,9 +26,11 @@ def settings_loop(settings_obj, screen):
     save_button = Button(200, 450, 150, 50, "Speichern")
     back_button = Button(370, 450, 130, 50, "Zurück")
 
+    clock = pygame.time.Clock()
     running = True
 
     while running:
+        clock.tick(60)  # 60 FPS
         game_screen.fill((20, 20, 20))
         mouse_pos = pygame.mouse.get_pos()
 
@@ -59,6 +61,7 @@ def settings_loop(settings_obj, screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                return False  # Beende ohne zu speichern
 
             res_dropdown.handle_click(event, mouse_pos)
             master_slider.handle_event(event, mouse_pos)
@@ -79,8 +82,12 @@ def settings_loop(settings_obj, screen):
 
                 settings_obj.save_settings()
                 running = False
+                return True  # Speichern erfolgreich
 
             if back_button.is_clicked(event):
                 running = False
+                return False  # Abbrechen ohne zu speichern
 
         pygame.display.flip()
+
+    return False
