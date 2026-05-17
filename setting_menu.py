@@ -81,6 +81,10 @@ def settings_loop(settings_obj, screen):
                 settings_obj.sfx_volume = int(sfx_slider.value)
 
                 settings_obj.save_settings()
+                
+                # Fenster auf neue Auflösung resizen
+                game_screen = pygame.display.set_mode((width, height))
+                
                 running = False
                 return True  # Speichern erfolgreich
 
