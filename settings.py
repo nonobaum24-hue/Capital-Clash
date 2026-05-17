@@ -93,3 +93,55 @@ sfx_volume = {self.sfx_volume}
     def get_title(self):
         """Return the window title."""
         return self.__title
+    
+    def get_fps(self):
+        """Return the frames per second setting."""
+        return self.__fps
+    
+    def get_round_duration(self):
+        """Return the main round duration in seconds."""
+        return self.__round_duration
+    
+    def get_round_ticks(self):
+        """Return the main round in ticks."""
+        return self.__round_ticks
+    
+    def get_end_tick_buffer(self):
+        """Return the end tick buffer in seconds."""
+        return self.__end_tick_buffer
+    
+    def get_player_health(self):
+        """Return the player starting health."""
+        return self.__player_health
+    
+    def get_player_scale(self):
+        """Return the player sprite scale factor."""
+        return self.__player_scale
+    
+    def get_player_speed(self):
+        """Return the player movement speed."""
+        return self.__player_speed
+    
+    def get_player_attack_damage(self):
+        """Return the player attack damage."""
+        return self.__player_attack_damage
+    
+    def get_player_attack_cooldown(self):
+        """Return the player attack cooldown in frames."""
+        return self.__player_attack_cooldown
+    
+    def get_player_exception_radius(self):
+        """Return the safe spawn distance around player."""
+        return self.__player_exception_radius
+    
+    def get_skin(self):
+        """Return the current character skin."""
+        return self.__skin
+    
+    def get_background_color(self):
+        """Return the menu background color."""
+        return self.__background_color
+    
+    def get_background_opacity(self):
+        """Return the menu background opacity."""
+        return self.__background_opacity

@@ -36,7 +36,7 @@ def startmenu(game_settings):
         floor_img = None   # None → screen.fill((0,0,0)) serves as fallback
 
     scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)  # surface for drawing the menu
-    scrn_surf.fill((*game_settings.background_color, game_settings.background_opacity))  # fill with dark gray background
+    scrn_surf.fill((*game_settings.get_background_color(), game_settings.get_background_opacity()))  # fill with dark gray background
     screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
 
     strt_btn = start_button(width, height)  # create an instance of the start button, passing window dimensions
@@ -49,7 +49,7 @@ def startmenu(game_settings):
         if floor_img:
             screen.blit(floor_img, (0, 0))
         scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)  # surface for drawing the menu
-        scrn_surf.fill((*game_settings.background_color, game_settings.background_opacity))  # fill with dark gray background
+        scrn_surf.fill((*game_settings.get_background_color(), game_settings.get_background_opacity()))  # fill with dark gray background
         screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
 
         strt = strt_btn.draw(screen)  # draw the start button on the screen

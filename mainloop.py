@@ -63,8 +63,8 @@ def mainloop(screen, settings_obj):
 
     # Player character placed at the centre of the screen
     marx_char = marx(width // 2, height // 2, marx_path, marx_path2, 
-                     scale=game_settings.player_scale, 
-                     health_points=game_settings.player_health,
+                     scale=game_settings.get_player_scale(), 
+                     health_points=game_settings.get_player_health(),
                      screen_w=width, screen_h=height)
 
     # Marx's HP bar: centred at top of screen, 200 px wide, 20 px tall
@@ -123,8 +123,8 @@ def mainloop(screen, settings_obj):
     opponents     = []
 
     # Round timer: decrements every frame
-    roundtick     = game_settings.round_ticks
-    endtick       = game_settings.end_tick_buffer * game_settings.fps
+    roundtick     = game_settings.get_round_ticks()
+    endtick       = game_settings.get_end_tick_buffer() * game_settings.get_fps()
 
     clock   = pygame.time.Clock()
     running = True

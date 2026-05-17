@@ -74,7 +74,7 @@ def boss_fight(screen, marxhealth, settings_obj):
 
     # Player character centred on screen
     marx_char = marx(width // 2, height // 2, marx_path, marx_path2,
-                     scale=game_settings.player_scale,
+                     scale=game_settings.get_player_scale(),
                      screen_w=width, screen_h=height)
     marx_char.health_points = marxhealth
 
