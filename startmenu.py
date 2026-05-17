@@ -52,7 +52,7 @@ def startmenu(game_settings):
         scrn_surf.fill((*game_settings.get_background_color(), game_settings.get_background_opacity()))  # fill with dark gray background
         screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
 
-        setngs_btn.draw(screen)  # draw the settings button on the screen
+        stngs_btn.draw(screen)  # draw the settings button on the screen
 
         strt = strt_btn.draw(screen)  # draw the start button on the screen
         if strt:
