@@ -2,7 +2,7 @@ import pygame
 import os
 
 from settings import settings
-from setting_menu import setting_loop
+from setting_menu import settings_loop
 
 # =============================================================================
 # start_classes.py  –  Classes for Capital Clash
@@ -58,4 +58,4 @@ class settings_button(button):
 
     def check_click(self):
         if pygame.mouse.get_pressed()[0] and self.is_clicked(pygame.mouse.get_pos()):
-            setting_loop(settings, self.screen)  # Open the settings menu
+            settings_loop(settings, self.screen)  # Open the settings menu
