@@ -38,7 +38,7 @@ class start_button(button):
         self.width = 200
         self.height = 80
         self.x = screen_w // 2 - self.width // 2  # center horizontally
-        self.y = screen_h // 2 - self.height // 2  # center vertically
+        self.y = screen_h // 2 - self.height // 2 - 50  # 50px höher
         self.text = "Start Game"
 
     def check_click(self):
@@ -52,7 +52,7 @@ class settings_button(button):
         self.width = 200
         self.height = 80
         self.x = screen_w // 2 - self.width // 2  # center horizontally
-        self.y = screen_h // 2 + self.height  # position below the start button
+        self.y = screen_h // 2 + self.height // 2 + 20  # 20px darunter
         self.text = "Settings"
         self.screen = screen
         self.settings_obj = settings_obj
