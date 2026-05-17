@@ -24,7 +24,7 @@ def startmenu(game_settings):
     # Initialise pygame and create the display window
     pygame.init()
     screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption(game_settings.title)   # title bar text
+    pygame.display.set_caption("Capital Clash")   # title bar text
 
     script_dir  = os.path.dirname(os.path.abspath(__file__))
     floor_path  = os.path.join(script_dir, "assets", "environment", "floor.png")   # background image

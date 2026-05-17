@@ -89,3 +89,7 @@ sfx_volume = {self.sfx_volume}
         self.master_volume = master_volume
         self.music_volume = music_volume
         self.sfx_volume = sfx_volume
+
+    def get_title(self):
+        """Return the window title."""
+        return self.__title

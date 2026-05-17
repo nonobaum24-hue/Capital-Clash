@@ -36,7 +36,7 @@ def boss_fight(screen, marxhealth, settings_obj):
 
     pygame.init()
     screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption(game_settings.title)
+    pygame.display.set_caption("Capital Clash")
 
     # Music
     #music
