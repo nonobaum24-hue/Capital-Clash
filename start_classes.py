@@ -1,7 +1,7 @@
 import pygame
 import os
 
-from settings import settings
+from settings import settings as SettingsClass
 from setting_menu import settings_loop
 
 # =============================================================================
@@ -47,7 +47,7 @@ class start_button(button):
         return False
     
 class settings_button(button):
-    def __init__(self, screen_w, screen_h, settings, screen):
+    def __init__(self, screen_w, screen_h, settings_obj, screen):
         super().__init__()  # call the base class constructor
         self.width = 200
         self.height = 80
@@ -55,7 +55,10 @@ class settings_button(button):
         self.y = screen_h // 2 + self.height  # position below the start button
         self.text = "Settings"
         self.screen = screen
+        self.settings_obj = settings_obj
 
     def check_click(self):
         if pygame.mouse.get_pressed()[0] and self.is_clicked(pygame.mouse.get_pos()):
-            settings_loop(settings, self.screen)  # Open the settings menu
+            settings_loop(self.settings_obj, self.screen)  # Open the settings menu
+            return True
+        return False

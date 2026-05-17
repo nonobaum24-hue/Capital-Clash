@@ -14,19 +14,18 @@
 # Lose condition: marx.alive becomes False  →  player loses
 # =============================================================================
 
-def boss_fight(screen, marxhealth, settings):
+def boss_fight(screen, marxhealth, settings_obj):
     import pygame
     import os
     from game_classes import marx, damage_area, damage_screen, health_bar
     from opp_classes import normal_opp, super_opp, mini_opp, SpawnManager
     from collectible_classes import collectible_manager
     from boss_classes import boss_opp, punch_area, impact_area, boss_projectile
-    from settings import settings
 
     print('bossfight')   # debug output to confirm the function was called
 
     # Load settings
-    game_settings = settings
+    game_settings = settings_obj
 
     # =========================================================================
     # Setup: Window / Display (same dimensions as mainloop.py)
@@ -191,4 +190,5 @@ def boss_fight(screen, marxhealth, settings):
         pygame.display.flip()   # push finished frame to the monitor
         clock.tick(60)          # cap at 60 FPS
     #music stop
+    pygame.mixer.music.stop()
     pygame.mixer.music.stop()

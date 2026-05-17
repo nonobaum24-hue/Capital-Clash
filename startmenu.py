@@ -9,14 +9,13 @@
 # mainloop() and boss_fight() without reopening a new window.
 # =============================================================================
 
-def startmenu(settings):
+def startmenu(game_settings):
     import os
     import pygame
     from start_classes import start_button, settings_button
-    from settings import settings
 
     # Load settings
-    game_settings = settings
+    # game_settings = settings
 
     # Window dimensions from settings
     width  = game_settings.width
@@ -66,4 +65,5 @@ def startmenu(settings):
     # Return the screen surface so the caller (game.py) can pass it on to
     # mainloop() and boss_fight() – avoids reopening the window.
     del scrn_surf  # clean up the menu surface as it's no longer needed
+    return screen
     return screen

@@ -16,16 +16,15 @@
 # window is reused across all game phases.
 # =============================================================================
 
-def mainloop(screen, settings):
+def mainloop(screen, settings_obj):
     import os
     import pygame
     from game_classes import marx, damage_area, damage_screen, health_bar
     from opp_classes import normal_opp, super_opp, mini_opp, SpawnManager
     from collectible_classes import collectible_manager
-    from settings import settings
 
     # Load settings
-    game_settings = settings
+    game_settings = settings_obj
 
     # =========================================================================
     # Setup: Window / Display
