@@ -43,6 +43,7 @@ def startmenu(game_settings):
     stngs_btn = settings_button(width, height, game_settings, screen)  # create an instance of the settings button
 
     running = True
+    resolution_changed = False
 
     while running:
         screen.fill((0, 0, 0))            # black fill prevents ghost frames
@@ -52,11 +53,20 @@ def startmenu(game_settings):
         scrn_surf.fill((*game_settings.get_background_color(), game_settings.get_background_opacity()))  # fill with dark gray background
         screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
 
-        stngs_btn.draw(screen)  # draw the settings button on the screen
-
         strt = strt_btn.draw(screen)  # draw the start button on the screen
         if strt:
             running = False  # Exit the loop if the start button is clicked
+
+        stngs_btn.draw(screen)  # draw the settings button on the screen
+        if stngs_btn.check_click():
+            # Save old resolution
+            old_width = game_settings.width
+            old_height = game_settings.height
+            
+            # Check if resolution has changed
+            if game_settings.width != old_width or game_settings.height != old_height:
+                resolution_changed = True
+                running = False
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -67,5 +77,10 @@ def startmenu(game_settings):
     # Return the screen surface so the caller (game.py) can pass it on to
     # mainloop() and boss_fight() – avoids reopening the window.
     del scrn_surf  # clean up the menu surface as it's no longer needed
-    return screen
+    
+    # If resolution changed, restart the window
+    if resolution_changed:
+        pygame.quit()
+        return startmenu(game_settings)  # Restart recursively
+    
     return screen
