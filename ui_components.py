@@ -98,3 +98,52 @@ class Slider:
                 self.dragging = True
         elif event.type == pygame.MOUSEBUTTONUP:
             self.dragging = False
+
+class StartButton:
+    """Start Game Button für das Hauptmenü"""
+    def __init__(self, x, y, width, height, text="Start Game"):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.text = text
+        self.color = (255, 255, 255, 160)
+        self.hovered = False
+
+    def draw(self, screen, font):
+        but_surf = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        but_surf.fill(self.color)
+        screen.blit(but_surf, self.rect)
+        
+        text_surf = font.render(self.text, True, (0, 0, 0))
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        screen.blit(text_surf, text_rect)
+
+    def update(self, mouse_pos):
+        self.hovered = self.rect.collidepoint(mouse_pos)
+
+    def is_clicked(self, event):
+        return event.type == pygame.MOUSEBUTTONDOWN and self.hovered
+
+
+class SettingsButton:
+    """Settings Button für das Hauptmenü"""
+    def __init__(self, x, y, width, height, settings_obj, screen, text="Settings"):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.text = text
+        self.color = (255, 255, 255, 160)
+        self.hovered = False
+        self.settings_obj = settings_obj
+        self.screen = screen
+
+    def draw(self, screen, font):
+        but_surf = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        but_surf.fill(self.color)
+        screen.blit(but_surf, self.rect)
+        
+        text_surf = font.render(self.text, True, (0, 0, 0))
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        screen.blit(text_surf, text_rect)
+
+    def update(self, mouse_pos):
+        self.hovered = self.rect.collidepoint(mouse_pos)
+
+    def is_clicked(self, event):
+        return event.type == pygame.MOUSEBUTTONDOWN and self.hovered

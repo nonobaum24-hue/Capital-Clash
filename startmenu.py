@@ -12,7 +12,7 @@
 def startmenu(game_settings):
     import os
     import pygame
-    from start_classes import start_button, settings_button
+    from ui_components import StartButton, SettingsButton
 
     # Load settings
     # game_settings = settings
@@ -39,8 +39,8 @@ def startmenu(game_settings):
     scrn_surf.fill((*game_settings.get_background_color(), game_settings.get_background_opacity()))  # fill with dark gray background
     screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
 
-    strt_btn = start_button(width, height)  # create an instance of the start button, passing window dimensions
-    stngs_btn = settings_button(width, height, game_settings, screen)  # create an instance of the settings button
+    strt_btn = StartButton(width // 2 - 100, height // 2 - 50 - 40, 200, 80)
+    stngs_btn = SettingsButton(width // 2 - 100, height // 2 + 40, 200, 80, game_settings, screen)
 
     running = True
     resolution_changed = False
@@ -53,11 +53,17 @@ def startmenu(game_settings):
         scrn_surf.fill((*game_settings.get_background_color(), game_settings.get_background_opacity()))  # fill with dark gray background
         screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
 
-        strt = strt_btn.draw(screen)  # draw the start button on the screen
+        font = pygame.font.SysFont(None, 36)
+        strt = strt_btn.is_clicked(pygame.event.get())
         if strt:
-            running = False  # Exit the loop if the start button is clicked
+            running = False
 
-        stngs_btn.draw(screen)  # draw the settings button on the screen
+        strt_btn.update(pygame.mouse.get_pos())
+        strt_btn.draw(screen, font)
+        
+        stngs_btn.update(pygame.mouse.get_pos())
+        stngs_btn.draw(screen, font)
+        
         if stngs_btn.check_click():
             # Save old resolution
             old_width = game_settings.width
