@@ -13,6 +13,7 @@ def startmenu(game_settings):
     import os
     import pygame
     from ui_components import StartButton, SettingsButton
+    from setting_menu import settings_loop
 
     # Load settings
     # game_settings = settings
@@ -51,7 +52,7 @@ def startmenu(game_settings):
     resolution_changed = False
 
     while running:
-        screen.fill((0, 0, 0))            # black fill prevents ghost frames
+        screen.fill((0, 0, 0))
         if floor_img:
             screen.blit(floor_img, (0, 0))
         scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)
@@ -59,37 +60,43 @@ def startmenu(game_settings):
         screen.blit(scrn_surf, (0, 0))
 
         font = pygame.font.SysFont(None, 36)
-        strt = strt_btn.is_clicked(pygame.event.get())
-        if strt:
-            running = False
-
+        
         strt_btn.update(pygame.mouse.get_pos())
         strt_btn.draw(screen, font)
         
         stngs_btn.update(pygame.mouse.get_pos())
         stngs_btn.draw(screen, font)
-        
-        if stngs_btn.check_click():
-            # Save old resolution
-            old_width = game_settings.width
-            old_height = game_settings.height
-            
-            # Check if resolution has changed
-            if game_settings.width != old_width or game_settings.height != old_height:
-                resolution_changed = True
-                running = False
 
+        # Handle all events (including clicks and quit)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False  # Exit the loop if the window is closed
+                running = False
+            
+            # Check if start button was clicked
+            if strt_btn.is_clicked(event):
+                running = False
+            
+            # Check if settings button was clicked):
+                resolution_changed = Truelution
+                running = False                old_width = game_settings.width
+gs.height
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False  # Exit the loop if the window is closed        settings_loop(game_settings, screen)
         
-        pygame.display.flip()  # update the display to show the button
-
+        pygame.display.flip()  # update the display to show the button                # Check if resolution has changed
+ht != old_height:
     # Return the screen surface so the caller (game.py) can pass it on to
     # mainloop() and boss_fight() – avoids reopening the window.
-    del scrn_surf  # clean up the menu surface as it's no longer needed
-    
+    del scrn_surf  # clean up the menu surface as it's no longer needed    
+    play to show the button
     # If resolution changed, restart the window
+    if resolution_changed:en surface so the caller (game.py) can pass it on to
+        pygame.quit()w.
+        return startmenu(game_settings)  # Restart recursivelydel scrn_surf  # clean up the menu surface as it's no longer needed
+    
+    return screen    # If resolution changed, restart the window
+
     if resolution_changed:
         pygame.quit()
         return startmenu(game_settings)  # Restart recursively
