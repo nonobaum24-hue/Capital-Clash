@@ -31,8 +31,8 @@ def boss_fight(screen, marxhealth, settings_obj):
     # Setup: Window / Display (same dimensions as mainloop.py)
     # =========================================================================
 
-    width  = game_settings.width
-    height = game_settings.height
+    width  = game_settings["width"]
+    height = game_settings["height"]
 
     pygame.init()
     screen = pygame.display.set_mode((width, height))
@@ -88,7 +88,7 @@ def boss_fight(screen, marxhealth, settings_obj):
 
 
     # Round timer (kept for API compatibility with SpawnManager)
-    roundtick     = game_settings.round_ticks
+    roundtick     = game_settings["round_ticks"]
 
     clock   = pygame.time.Clock()
     running = True
