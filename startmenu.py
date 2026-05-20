@@ -35,9 +35,14 @@ def startmenu(game_settings):
         print(f"Floor nicht gefunden: {e}")
         floor_img = None   # None → screen.fill((0,0,0)) serves as fallback
 
-    scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)  # surface for drawing the menu
-    scrn_surf.fill((*game_settings.get_background_color(), game_settings.get_background_opacity()))  # fill with dark gray background
-    screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
+    # Hole die Settings als dict
+    settings_dict = game_settings.get_settings()
+    bg_color = settings_dict["background_color"]
+    bg_opacity = settings_dict["background_opacity"]
+
+    scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+    scrn_surf.fill((*bg_color, bg_opacity))
+    screen.blit(scrn_surf, (0, 0))
 
     strt_btn = StartButton(width // 2 - 100, height // 2 - 50 - 40, 200, 80)
     stngs_btn = SettingsButton(width // 2 - 100, height // 2 + 40, 200, 80, game_settings, screen)
@@ -49,9 +54,9 @@ def startmenu(game_settings):
         screen.fill((0, 0, 0))            # black fill prevents ghost frames
         if floor_img:
             screen.blit(floor_img, (0, 0))
-        scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)  # surface for drawing the menu
-        scrn_surf.fill((*game_settings.get_background_color(), game_settings.get_background_opacity()))  # fill with dark gray background
-        screen.blit(scrn_surf, (0, 0))  # draw the menu surface onto the main screen
+        scrn_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        scrn_surf.fill((*bg_color, bg_opacity))
+        screen.blit(scrn_surf, (0, 0))
 
         font = pygame.font.SysFont(None, 36)
         strt = strt_btn.is_clicked(pygame.event.get())
