@@ -22,6 +22,7 @@ from settings import settings
 
 # Load default game settings
 _DEFAULT_SETTINGS = settings()
+_DEFAULT_SETTINGS_DICT = _DEFAULT_SETTINGS.get_settings()
 
 # Absolute path to the directory that contains this script.
 # Used to build asset paths that work regardless of the working directory.
@@ -98,9 +99,9 @@ class marx:
         """
         # Use defaults from settings if not provided
         if scale is None:
-            scale = _DEFAULT_SETTINGS.get_player_scale()
+            scale = _DEFAULT_SETTINGS_DICT["player_scale"]
         if health_points is None:
-            health_points = _DEFAULT_SETTINGS.get_player_health()
+            health_points = _DEFAULT_SETTINGS_DICT["player_health"]
         if screen_w is None:
             screen_w = _DEFAULT_SETTINGS.width
         if screen_h is None:
@@ -113,8 +114,8 @@ class marx:
         self.scale          = scale
         self.health_points  = health_points
         self.max_health     = health_points   # upper HP cap; raised by Revive collectibles
-        self.damage         = _DEFAULT_SETTINGS.get_player_attack_damage()
-        self.exception_radius = _DEFAULT_SETTINGS.get_player_exception_radius()
+        self.damage         = _DEFAULT_SETTINGS_DICT["player_attack_damage"]
+        self.exception_radius = _DEFAULT_SETTINGS_DICT["player_exception_radius"]
 
         # Window boundaries used for movement clamping and spawn-exclusion zone
         self.screen_w = screen_w
@@ -247,7 +248,7 @@ class marx:
         opponents – list of currently active enemy objects (for hit detection)
         """
         # Movement: pixels per frame in the pressed direction (from settings)
-        move_speed = _DEFAULT_SETTINGS.get_player_speed()
+        move_speed = _DEFAULT_SETTINGS_DICT["player_speed"]
         if keys[pygame.K_LEFT]:  self.move(-move_speed,  0)
         if keys[pygame.K_RIGHT]: self.move( move_speed,  0)
         if keys[pygame.K_UP]:    self.move( 0, -move_speed)
@@ -274,7 +275,7 @@ class marx:
                 if opponents.rect.colliderect(area.getrect()):
                     opponents.getdamage(self.damage)
             # Start the cooldown (from settings)
-            self.attack_cooldown = _DEFAULT_SETTINGS.get_player_attack_cooldown()
+            self.attack_cooldown = _DEFAULT_SETTINGS_DICT["player_attack_cooldown"]
 
     # -------------------------------------------------------------------------
     # Combat
