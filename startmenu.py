@@ -90,16 +90,3 @@ def startmenu(game_settings):
     
     return screen
     del scrn_surf  # clean up the menu surface as it's no longer needed    
-    play to show the button
-    # If resolution changed, restart the window
-    if resolution_changed:en surface so the caller (game.py) can pass it on to
-        pygame.quit()w.
-        return startmenu(game_settings)  # Restart recursivelydel scrn_surf  # clean up the menu surface as it's no longer needed
-    
-    return screen    # If resolution changed, restart the window
-
-    if resolution_changed:
-        pygame.quit()
-        return startmenu(game_settings)  # Restart recursively
-    
-    return screen
