@@ -79,7 +79,7 @@ def mainloop(screen, settings_obj):
     #music
     music_path = os.path.join(script_dir, "assets", "music", "Arbeiterfront_8-Bit.mp3")
     pygame.mixer.music.load(music_path)
-    pygame.mixer.music.set_volume(game_settings.music_volume*0.3)
+    pygame.mixer.music.set_volume(game_settings["music_volume"]*0.01)
     pygame.mixer.music.play(-1, 0)  # Loop the music indefinitely, starting at 0 seconds
 
     # =========================================================================
