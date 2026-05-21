@@ -238,7 +238,7 @@ class marx:
     # Input Handling
     # -------------------------------------------------------------------------
 
-    def input_monitoring(self, keys, area, opponents):
+    def input_monitoring(self, keys, area, opponents, settings_obj=None):
         """
         Process keyboard input for movement and attacking.
 
@@ -247,6 +247,7 @@ class marx:
         keys      – result of pygame.key.get_pressed() for the current frame
         area      – damage_area object (used to colour the attack circle)
         opponents – list of currently active enemy objects (for hit detection)
+        settings_obj – settings instance for opening the settings menu
         """
         # Movement: pixels per frame in the pressed direction (from settings)
         move_speed = _DEFAULT_SETTINGS_DICT["player_speed"]
@@ -254,7 +255,7 @@ class marx:
         if keys[pygame.K_RIGHT]: self.move( move_speed,  0)
         if keys[pygame.K_UP]:    self.move( 0, -move_speed)
         if keys[pygame.K_DOWN]:  self.move( 0,  move_speed)
-        if keys[pygame.K_p]:    settings_loop(settings, pygame.display.get_surface())  # Open settings menu
+        if keys[pygame.K_p] and settings_obj:    settings_loop(settings_obj, pygame.display.get_surface())  # Open settings menu
 
         # Cooldown tick: count down by 1 each frame and colour the area accordingly
         if self.attack_cooldown > 0:

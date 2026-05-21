@@ -155,7 +155,7 @@ def mainloop(screen, settings_obj):
                                           pygame.K_UP,   pygame.K_DOWN))
 
         # Process movement and attack
-        marx_char.input_monitoring(keys, marx_area, opponents)
+        marx_char.input_monitoring(keys, marx_area, opponents, settings_obj)
         # Advance the animation (idle ↔ run sprite toggle)
         marx_char.tick_animation(is_moving)
 

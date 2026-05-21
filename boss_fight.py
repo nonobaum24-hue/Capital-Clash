@@ -130,7 +130,7 @@ def boss_fight(screen, marxhealth, settings_obj):
                                           pygame.K_UP,   pygame.K_DOWN))
 
         # Apply movement and attack input
-        marx_char.input_monitoring(keys, marx_area, BOSS)
+        marx_char.input_monitoring(keys, marx_area, BOSS, settings_obj)
         # Advance the animation sprite (idle ↔ run)
         marx_char.tick_animation(is_moving)
 
