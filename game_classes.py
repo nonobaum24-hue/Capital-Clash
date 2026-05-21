@@ -15,6 +15,7 @@ import os
 import pygame
 from random import randint, uniform
 from settings import settings
+from setting_menu import settings_loop
 
 # =============================================================================
 # Module-level Constants
@@ -253,6 +254,7 @@ class marx:
         if keys[pygame.K_RIGHT]: self.move( move_speed,  0)
         if keys[pygame.K_UP]:    self.move( 0, -move_speed)
         if keys[pygame.K_DOWN]:  self.move( 0,  move_speed)
+        if keys[pygame.K_p]:    settings_loop(settings, pygame.display.get_surface())  # Open settings menu
 
         # Cooldown tick: count down by 1 each frame and colour the area accordingly
         if self.attack_cooldown > 0:
