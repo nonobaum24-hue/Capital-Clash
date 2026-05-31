@@ -478,19 +478,3 @@ class health_bar:
         pct = max(0, hp / self.max_health)   # clamp to [0, 1] so bar never goes negative
         pygame.draw.rect(screen, (0, 255, 0),
                          (self.x, self.y, self.width * pct, self.height))
-
-# --- Step 11: Frame Cap and Display ----------------------------------
-        pygame.display.flip()   # Push the finished frame to the monitor
-        clock.tick(60)          # Cap at 60 FPS to keep game speed consistent
-
-        # ─────────────────────────────────────────────────────────────────────
-        # End condition: timer expired AND no enemies remain on the field
-        if roundtick <= 0 and not opponents:
-            if endtick > 0:
-                endtick -= 1
-            elif endtick == 0:
-                running = False
-                return True, marx_char.health_points
-
-    # Stop the background music
-    pygame.mixer.music.stop()
