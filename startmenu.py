@@ -7,6 +7,23 @@
 # =============================================================================
 
 def startmenu(game_settings):
+    """
+    Display the start screen before the main game begins.
+    
+    Initialises pygame and creates the game window. Returns the pygame screen
+    surface so the same window can be reused by mainloop() and boss_fight()
+    without reopening a new window.
+    
+    Parameters
+    ----------
+    game_settings : settings
+        The game settings object containing resolution and UI preferences
+        
+    Returns
+    -------
+    pygame.Surface
+        The game screen surface for reuse in subsequent game phases
+    """
     import os
     import pygame
     from ui_components import StartButton, SettingsButton
@@ -30,7 +47,7 @@ def startmenu(game_settings):
         print(f"Floor nicht gefunden: {e}")
         floor_img = None
 
-    # Hole die Settings als dict
+    # Retrieve settings as a dictionary
     settings_dict = game_settings.get_settings()
     bg_color = settings_dict["background_color"]
     bg_opacity = settings_dict["background_opacity"]
@@ -69,7 +86,7 @@ def startmenu(game_settings):
             
             # Check if settings button was clicked
             if stngs_btn.is_clicked(event):
-                # Save old resolution
+                # Save old resolution to detect changes
                 old_width = game_settings.width
                 old_height = game_settings.height
                 
@@ -83,10 +100,10 @@ def startmenu(game_settings):
         
         pygame.display.flip()
 
-    # If resolution changed, restart the window
+    # If resolution changed, restart the start menu with the new dimensions
     if resolution_changed:
         pygame.quit()
         return startmenu(game_settings)
     
     return screen
-    del scrn_surf  # clean up the menu surface as it's no longer needed    
+    del scrn_surf  # Clean up the menu surface as it's no longer needed

@@ -5,6 +5,20 @@ from ui_components import Dropdown, Slider, Button
 
 
 def settings_loop(settings_obj, screen):
+    """
+    Display and handle the settings menu.
+    
+    Allows the player to adjust resolution, master volume, music volume,
+    and SFX volume. Changes are saved to user_settings.py immediately.
+    If resolution changes, the screen is resized before returning.
+    
+    Parameters
+    ----------
+    settings_obj : settings
+        The game settings object to modify and save
+    screen : pygame.Surface
+        The existing game screen surface to reuse
+    """
     game_screen = screen  # Use the existing screen surface passed from the start menu
     game_screen.fill((0, 0, 0))  # Clear the screen with black
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -12,7 +26,7 @@ def settings_loop(settings_obj, screen):
     font_large = pygame.font.Font(None, 36)
     font_small = pygame.font.Font(None, 24)
 
-    # Auflösungsoptionen
+    # Available resolution options
     resolutions = ["1280x720", "1920x1080", "2560x1440"]
     current_res_index = 0
     if f"{settings_obj.width}x{settings_obj.height}" in resolutions:
@@ -34,11 +48,11 @@ def settings_loop(settings_obj, screen):
         game_screen.fill((20, 20, 20))
         mouse_pos = pygame.mouse.get_pos()
 
-        # Titel
+        # Display title
         title = font_large.render("Einstellungen", True, (255, 255, 255))
         game_screen.blit(title, (50, 30))
 
-        # Labels
+        # Display labels for settings
         res_label = font_small.render("Auflösung:", True, (255, 255, 255))
         game_screen.blit(res_label, (50, 100))
 
@@ -61,7 +75,7 @@ def settings_loop(settings_obj, screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-                return False  # Beende ohne zu speichern
+                return False  # Exit without saving
 
             res_dropdown.handle_click(event, mouse_pos)
             master_slider.handle_event(event, mouse_pos)
@@ -69,28 +83,29 @@ def settings_loop(settings_obj, screen):
             sfx_slider.handle_event(event, mouse_pos)
 
             if save_button.is_clicked(event):
-                # Auflösung speichern
+                # Parse and save resolution
                 res_str = res_dropdown.get_selected()
                 width, height = map(int, res_str.split('x'))
                 settings_obj.width = width
                 settings_obj.height = height
 
-                # Lautstärke speichern
+                # Save volume settings
                 settings_obj.master_volume = int(master_slider.value)
                 settings_obj.music_volume = int(music_slider.value)
                 settings_obj.sfx_volume = int(sfx_slider.value)
 
+                # Persist settings to file
                 settings_obj.save_settings()
                 
-                # Fenster auf neue Auflösung resizen
+                # Resize the window to new resolution
                 game_screen = pygame.display.set_mode((width, height))
                 
                 running = False
-                return True  # Speichern erfolgreich
+                return True  # Settings saved successfully
 
             if back_button.is_clicked(event):
                 running = False
-                return False  # Abbrechen ohne zu speichern
+                return False  # Discard changes without saving
 
         pygame.display.flip()
 

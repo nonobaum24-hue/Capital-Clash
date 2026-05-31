@@ -321,19 +321,27 @@ class boss_opp:
 
     def _check_and_trigger_cast(self, projectiles):
         """
-        Trigger eine Impact-Area und spawne ein Projektil wenn Olaf in Phase 2 ist und der Cooldown vorbei.
-        Startet die Cast-Animation und aktiviert die Impact-Area mit Schaden.
-        Das Projektil fliegt nur visual zur Impact-Area Position (kein Schaden vom Projektil).
+        Trigger an impact area and spawn a visual projectile if Olaf is in Phase 2
+        and the cooldown is expired.
+        
+        The cast animation plays while the impact area is locked in place at Marx's
+        current position. A projectile flies visually toward the impact area (purely
+        for show; damage comes from the impact area itself).
+        
+        Parameters
+        ----------
+        projectiles : list
+            List to append new boss_projectile objects to
         """
         if self.phase == 2 and self._cast_cd == 0:
             self._cast_active  = True
             self._cast_tick    = 0
             # Set cooldown to a random value between min and max
             self._cast_cd      = randint(self.CAST_COOLDOWN_BASE[0], self.CAST_COOLDOWN_BASE[1])
-            # Aktiviere die Impact-Area: sie wird an Marx's aktueller Position 
-            # eingefrostet und blendet sich rot ein
+            # Activate the impact area: it locks to Marx's current position
+            # and fades in red over the delay period
             self.impact_area.activate(self.impact_damage, delay_frames=self.CAST_DELAY)
-            # Spawne ein visuelles Projektil (fliegt zur eingefrorenen Impact-Area Position)
+            # Spawn a visual projectile (flies to the locked impact area position)
             proj = boss_projectile(self.position[0], self.position[1], 
                                    target_x=self.impact_area.locked_x,
                                    target_y=self.impact_area.locked_y)
@@ -371,13 +379,13 @@ class boss_opp:
 
     def tick(self, player, projectiles, punch_area):
         """
-        Per-frame update for the boss.  Called by boss_fight.py each iteration.
+        Per-frame update for the boss. Called by boss_fight.py every iteration.
 
         Parameters
         ----------
-        player      – the marx object
-        projectiles – list to append new boss_projectile objects to
-        punch_area  – the punch_area instance that visualises and applies the hit
+        player      : marx – the player character
+        projectiles : list – list to append new boss_projectile objects to
+        punch_area  : punch_area – the punch_area instance that visualises and applies melee hits
         """
         if not self.alive:
             return
@@ -519,123 +527,90 @@ class punch_area:
 
 
 class impact_area:
-	"""
-	Impact-Area: Ein roter Kreis erscheint auf der aktuellen Position des Gegners
-	und blendet sich langsam rot ein (wie punch_area).
-	
-	Wenn der Kreis voll eingefadet ist und Marx noch im Radius steht, wird der
-	Schaden angewendet. Die Position wird eingefrostet wenn die Area aktiviert wird,
-	sonst folgt sie immer dem Player.
-	
-	Das System wiederholt sich alle paar Sekunden (Cooldown-basiert).
-	"""
+    """
+    Impact area: A red circle appears at Marx's current position (when activated)
+    and fades in red over the delay period.
+    
+    Once fully faded and Marx is still in the radius, damage is applied.
+    The position is locked when activated; otherwise it follows the player.
+    
+    The system repeats every few seconds based on the cooldown timer.
+    """
 
-	RADIUS = 80		# Radius des Impactbereichs in Pixeln
-	ALPHA  = 0			# Aktuelle Alphavalue (0 = unsichtbar, 255 = vollständig opak)
+    RADIUS = 80         # Radius of the impact area in pixels
+    ALPHA  = 0          # Current alpha value (0 = invisible, 255 = fully opaque)
 
-	def __init__(self, player):
-		self.player       = player
-		self.active       = False		# Ist die Area gerade aktiv?
-		self.tick_count   = 0			# Verbleibende Frames bis zum Hit
-		self.max_ticks    = 0			# Speichert den Ausgangswert für Farbinterpolation
-		self.damage       = 0			# Schaden zum Anwenden wenn Countdown = 0
-		
-		# Eingefrorene Position (wenn inaktiv, folgt sie dem Player)
-		self.locked_x     = 0
-		self.locked_y     = 0
+    def __init__(self, player):
+        """
+        Parameters
+        ----------
+        player : marx – reference to the player character
+        """
+        self.player       = player
+        self.active       = False      # Is the area currently active?
+        self.tick_count   = 0          # Remaining frames until damage is applied
+        self.max_ticks    = 0          # Stores the initial value for colour interpolation
+        self.damage       = 0          # Damage to apply when countdown reaches 0
+        
+        # Locked position (when inactive, follows the player for preview)
+        self.locked_x     = 0
+        self.locked_y     = 0
 
-	# ── Controls ─────────────────────────────────────────────────────────────
+    def activate(self, damage, delay_frames):
+        """
+        Activate the impact area.
+        Ignored if an area is already active (no interrupt/reset).
 
-	def activate(self, damage, delay_frames):
-		"""
-		Aktiviert die Impact-Area.
-		Wird ignoriert wenn eine Area bereits aktiv ist (kein Interrupt).
+        Parameters
+        ----------
+        damage       : int – HP to remove from Marx when countdown expires
+        delay_frames : int – number of frames until damage is applied
+        """
+        if not self.active:
+            self.damage     = damage
+            self.tick_count = delay_frames
+            self.max_ticks  = delay_frames
+            self.active     = True
+            
+            # Lock position: where is Marx right now?
+            self.locked_x = self.player.x
+            self.locked_y = self.player.y
 
-		Parameter
-		---------
-		damage       – HP abgezogen von Marx wenn Countdown = 0
-		delay_frames – Frames bis der Hit angewendet wird
-		"""
-		if not self.active:
-			self.damage     = damage
-			self.tick_count = delay_frames
-			self.max_ticks  = delay_frames
-			self.active     = True
-			
-			# Position einfrieren: wo ist Marx jetzt?
-			self.locked_x = self.player.x
-			self.locked_y = self.player.y
+    def tick(self):
+        """
+        Per-frame update. Must be called every frame (from boss_opp.tick()).
+        Counts down the delay; when it reaches 0, checks collision and applies damage.
+        """
+        if not self.active:
+            return
 
-	def tick(self):
-		"""
-		Muss jeden Frame aufgerufen werden (vom Boss).
-		Zählt den Countdown runter; wenn 0 erreicht, prüft Kollision und wendet Schaden an.
-		"""
-		if not self.active:
-			return
+        if self.tick_count > 0:
+            self.tick_count -= 1        # One frame closer to damage
+        else:
+            # Countdown expired → apply damage if Marx is in the collision area
+            if self.player.get_rect().colliderect(self._get_collision_rect()):
+                self.player.get_damage(self.damage)
+            self.active = False         # Area effect is complete
 
-		if self.tick_count > 0:
-			self.tick_count -= 1		# Ein Frame näher zum Hit
-		else:
-			# Countdown abgelaufen → Schaden anwenden wenn Marx im Bereich
-			if self.player.get_rect().colliderect(self._get_collision_rect()):
-				self.player.get_damage(self.damage)
-			self.active = False		# Area ist vorbei
+    def draw(self, screen):
+        """
+        Draw the semi-transparent circle using SRCALPHA technique:
+          1. Create a Surface with SRCALPHA (per-pixel alpha)
+          2. Draw the circle onto it with the current colour
+          3. Blit the surface onto the main screen
+        """
+        if not self.active:
+            return
+        
+        # Use the locked position for the active area
+        cx, cy = self.locked_x, self.locked_y
+        r      = self.RADIUS
+        color  = self._get_color()
 
-	# ── Internal Helpers ─────────────────────────────────────────────────────
-
-	def _get_color(self):
-		"""
-		Berechnet die aktuelle Füllfarbe als RGBA Tuple.
-
-		Inaktiv           → transparentes Rot (255, 0, 0, ALPHA=0)
-		Aktiviert (Start) → Alpha langsam erhöhen
-		Kurz vor Impact   → Rot ca. 75% opak
-
-		Die Farbe übergeht von weiß zu rot während Alpha hochgeht.
-		"""
-		if self.active == False or self.max_ticks == 0:
-			self.ALPHA = 0		# Alpha zurücksetzen wenn inaktiv
-			return (255, 0, 0, self.ALPHA)
-
-		progress   = (1 - (self.tick_count / self.max_ticks)) / 1.33		# 0.0 → ~0.75
-		if not self.active:
-			progress = 0
-		self.ALPHA = int(255 * progress)
-		return (255, 0, 0, self.ALPHA)
-
-	def _get_collision_rect(self):
-		"""Gibt ein Rechteck centerd auf die eingefrorene Position zurück (für Hit-Detection)."""
-		# Wenn nicht aktiv, gibt die Position des Players zur Referenz
-		if self.active:
-			cx, cy = self.locked_x, self.locked_y
-		else:
-			cx, cy = self.player.x, self.player.y
-		
-		r = self.RADIUS
-		return pygame.Rect(cx - r, cy - r, r * 2, r * 2)
-
-	# ── Drawing ───────────────────────────────────────────────────────────────
-
-	def draw(self, screen):
-		"""
-		Zeichnet den semi-transparenten Kreis mit SRCALPHA-Technik:
-		  1. Surface mit SRCALPHA erstellen (Pro-Pixel Alpha)
-		  2. Kreis drauf zeichnen mit aktueller Farbe
-		  3. Surface auf den Screen blitten
-		"""
-		if not self.active:
-			return
-		
-		# Wenn aktiv, nutzen wir die eingefrorene Position
-		cx, cy = self.locked_x, self.locked_y
-		r      = self.RADIUS
-		color  = self._get_color()
-
-		target_rect = pygame.Rect(cx - r, cy - r, r * 2, r * 2)
-		shape_surf  = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
-		pygame.draw.circle(shape_surf, color, (r, r), r)
-		screen.blit(shape_surf, target_rect)
+        target_rect = pygame.Rect(cx - r, cy - r, r * 2, r * 2)
+        shape_surf  = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+        pygame.draw.circle(shape_surf, color, (r, r), r)
+        screen.blit(shape_surf, target_rect)
 
 
 # =============================================================================
@@ -643,98 +618,98 @@ class impact_area:
 # =============================================================================
 
 class boss_projectile:
-	"""
-	Visuelles Projektil das von Olaf zur Impact-Area Position fliegt.
-	
-	Keine Schaden-Anwendung – der Schaden kommt von der Impact-Area.
-	Das Projektil ist nur optisch um die Cast-Animation zu unterstützen.
+    """
+    Visual projectile that flies from Olaf to the impact area position.
+    
+    No damage is applied by this projectile—damage comes from the impact area.
+    The projectile is purely aesthetic to support the cast animation.
 
-	Lifecycle:
-	  1. Spawns at the boss's position.
-	  2. Waits for PROJECTILE_SPAWN_DELAY (cast animation plays).
-	  3. Flies toward the impact area's target position at SPEED pixels per frame.
-	  4. On arrival (within 20 px of target): disappears, no damage or collision.
-	  5. alive is set to False → removed from the list by boss_fight.py.
-	"""
+    Lifecycle:
+      1. Spawns at the boss's position
+      2. Waits for PROJECTILE_SPAWN_DELAY (cast animation plays)
+      3. Flies toward the impact area's target position at SPEED pixels/frame
+      4. On arrival (within 20 px of target): disappears
+      5. alive is set to False → removed from the list by boss_fight.py
+    """
 
-	SPEED  = 5                           # pixels per frame during flight
-	SPAWN_DELAY = 30                    # frames: delay before projectile starts flying
+    SPEED  = 5                  # Pixels per frame during flight
+    SPAWN_DELAY = 30            # Frames: delay before projectile starts flying
 
-	def __init__(self, start_x, start_y, target_x, target_y):
-		"""
-		Parameters
-		----------
-		start_x, start_y – spawn position (Olaf's position)
-		target_x, target_y – destination (impact area's locked position)
-		"""
-		self.x            = float(start_x)
-		self.y            = float(start_y)
-		self.target_x     = float(target_x)
-		self.target_y     = float(target_y)
-		self.alive        = True
+    def __init__(self, start_x, start_y, target_x, target_y):
+        """
+        Parameters
+        ----------
+        start_x, start_y : float – spawn position (Olaf's position)
+        target_x, target_y : float – destination (impact area's locked position)
+        """
+        self.x            = float(start_x)
+        self.y            = float(start_y)
+        self.target_x     = float(target_x)
+        self.target_y     = float(target_y)
+        self.alive        = True
 
-		# Delay tracking - waits before starting to move
-		self.tick_count   = 0
+        # Delay tracking - waits before starting to move
+        self.tick_count   = 0
 
-		# Pre-compute the normalised direction vector scaled by SPEED
-		dx   = self.target_x - self.x
-		dy   = self.target_y - self.y
-		dist = (dx ** 2 + dy ** 2) ** 0.5
-		if dist > 0:
-			self.vx = (dx / dist) * self.SPEED
-			self.vy = (dy / dist) * self.SPEED
-		else:
-			self.vx = self.vy = 0   # edge case: spawn == target
+        # Pre-compute the normalised direction vector scaled by SPEED
+        dx   = self.target_x - self.x
+        dy   = self.target_y - self.y
+        dist = (dx ** 2 + dy ** 2) ** 0.5
+        if dist > 0:
+            self.vx = (dx / dist) * self.SPEED
+            self.vy = (dy / dist) * self.SPEED
+        else:
+            self.vx = self.vy = 0   # edge case: spawn == target
 
-		# Load the projectile sprite (projectile.png)
-		try:
-			self.image = load_image(os.path.join(SCRIPT_DIR, "assets", "effects", "projectile.png"), scale=0.25)
-		except Exception as e:
-			print(f"Projektil-Textur nicht gefunden: {e}")
-			self.image = None
+        # Load the projectile sprite (projectile.png)
+        try:
+            self.image = load_image(os.path.join(SCRIPT_DIR, "assets", "effects", "projectile.png"), scale=0.25)
+        except Exception as e:
+            print(f"Projektil-Textur nicht gefunden: {e}")
+            self.image = None
 
-		# Collision rect (updated every frame during flight)
-		if self.image:
-			self.rect = self.image.get_rect(topleft=(int(self.x), int(self.y)))
-		else:
-			self.rect = pygame.Rect(0, 0, 0, 0)
+        # Collision rect (updated every frame during flight)
+        if self.image:
+            self.rect = self.image.get_rect(topleft=(int(self.x), int(self.y)))
+        else:
+            self.rect = pygame.Rect(0, 0, 0, 0)
 
-	# ── Drawing ──────────────────────────────────────────────────────────────
+    # ── Drawing ──────────────────────────────────────────────────────────────
 
-	def draw(self, screen):
-		"""
-		Draw the projectile sprite.
-		Hidden during the spawn delay phase (before flight starts) and after arrival.
-		"""
-		if self.alive and self.tick_count >= self.SPAWN_DELAY and self.image:
-			self.rect.topleft = (int(self.x), int(self.y))
-			screen.blit(self.image, self.rect)
+    def draw(self, screen):
+        """
+        Draw the projectile sprite.
+        Hidden during the spawn delay phase (before flight starts) and after arrival.
+        """
+        if self.alive and self.tick_count >= self.SPAWN_DELAY and self.image:
+            self.rect.topleft = (int(self.x), int(self.y))
+            screen.blit(self.image, self.rect)
 
-	# ── Main Tick ────────────────────────────────────────────────────────────
+    # ── Main Tick ────────────────────────────────────────────────────────────
 
-	def tick(self):
-		"""
-		Per-frame update.  Called by boss_fight.py every iteration.
-		Moves toward target; marks as dead on arrival.
-		"""
-		if not self.alive:
-			return
+    def tick(self):
+        """
+        Per-frame update. Called by boss_fight.py every iteration.
+        Moves toward target; marks as dead on arrival.
+        """
+        if not self.alive:
+            return
 
-		self.tick_count += 1
+        self.tick_count += 1
 
-		# During the delay phase: do nothing (boss plays cast animation)
-		if self.tick_count < self.SPAWN_DELAY:
-			return
+        # During the delay phase: do nothing (boss plays cast animation)
+        if self.tick_count < self.SPAWN_DELAY:
+            return
 
-		# --- Flight phase: move toward the target position -------------------
-		self.x += self.vx
-		self.y += self.vy
-		self.rect.topleft = (int(self.x), int(self.y))
+        # --- Flight phase: move toward the target position -------------------
+        self.x += self.vx
+        self.y += self.vy
+        self.rect.topleft = (int(self.x), int(self.y))
 
-		# Check whether the target has been reached (within 20 px)
-		dx   = self.target_x - self.x
-		dy   = self.target_y - self.y
-		dist = (dx ** 2 + dy ** 2) ** 0.5
+        # Check whether the target has been reached (within 20 px)
+        dx   = self.target_x - self.x
+        dy   = self.target_y - self.y
+        dist = (dx ** 2 + dy ** 2) ** 0.5
 
-		if dist < 20:
-			self.alive = False   # arrived → mark as dead, no collision check
+        if dist < 20:
+            self.alive = False   # Arrived → mark as dead, no collision check

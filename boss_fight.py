@@ -15,6 +15,28 @@
 # =============================================================================
 
 def boss_fight(screen, marxhealth, settings_obj):
+    """
+    Boss fight game loop: Marx vs. Olaf.
+    
+    Differences from mainloop.py:
+      - No timed enemy waves (SCHEDULE is empty)
+      - The boss (BOSS) is a boss_opp instance with 1000 HP and two attack phases
+      - A punch_area visualises and applies the boss's melee damage
+      - In Phase 2 (HP ≤ 500) the boss also casts impact areas
+      - A separate boss HP bar is shown at the top of the screen
+    
+    Win condition:  BOSS.alive becomes False  →  player wins
+    Lose condition: marx.alive becomes False  →  player loses
+    
+    Parameters
+    ----------
+    screen : pygame.Surface
+        The pygame screen surface (reused from mainloop)
+    marxhealth : int
+        Marx's HP carried over from the main round
+    settings_obj : settings
+        The game settings object containing game parameters
+    """
     import pygame
     import os
     from game_classes import marx, damage_area, damage_screen, health_bar
@@ -22,7 +44,7 @@ def boss_fight(screen, marxhealth, settings_obj):
     from collectible_classes import collectible_manager
     from boss_classes import boss_opp, punch_area, impact_area, boss_projectile
 
-    print('bossfight')   # debug output to confirm the function was called
+    print('Boss fight started')   # Debug output to confirm the function was called
 
     # Load settings
     game_settings = settings_obj.get_settings()
@@ -186,9 +208,8 @@ def boss_fight(screen, marxhealth, settings_obj):
                 running = False
 
         # --- Step 11: Frame Cap and Display ----------------------------------
-        pygame.display.flip()   # push finished frame to the monitor
-        clock.tick(60)          # cap at 60 FPS
-    #music stop
-    pygame.mixer.music.stop()
-    pygame.mixer.music.stop()
+        pygame.display.flip()   # Push finished frame to the monitor
+        clock.tick(60)          # Cap at 60 FPS
+
+    # Stop the background music when the boss fight ends
     pygame.mixer.music.stop()

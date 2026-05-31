@@ -17,6 +17,30 @@
 # =============================================================================
 
 def mainloop(screen, settings_obj):
+    """
+    Main game loop for the 60-second wave-based combat round.
+    
+    Spawns waves of normal, super, and mini enemies over 60 seconds.
+    The player (Marx) moves with arrow keys and attacks with SPACE.
+    Enemies follow Marx, deal contact damage and can be killed.
+    Killed enemies may drop collectibles (health, aoe, revive).
+    
+    Win condition: 60-second timer ends with no enemies remaining.
+    Lose condition: Marx's HP drops to 0.
+    
+    Parameters
+    ----------
+    screen : pygame.Surface
+        The pygame screen surface (reused from startmenu)
+    settings_obj : settings
+        The game settings object containing game parameters
+        
+    Returns
+    -------
+    tuple : (alive, health)
+        alive : bool – True if Marx survived and won
+        health : int – Marx's remaining HP at round end
+    """
     import os
     import pygame
     from game_classes import marx, damage_area, damage_screen, health_bar
@@ -89,7 +113,7 @@ def mainloop(screen, settings_obj):
     #
     # Each entry in SCHEDULE is a dict with:
     #   "type"     – enemy class to spawn (normal_opp, super_opp, mini_opp)
-    #   "count"    – how many to spawn at once
+    #   "count"    – how many to spawn at once (default: 1)
     #   "tick"     – (one-shot) spawn when roundtick == this value
     #   "interval" – (periodic) spawn every N ticks
     #   "start"    – (periodic) only spawn while roundtick >= start
@@ -139,8 +163,8 @@ def mainloop(screen, settings_obj):
         # SpawnManager checks whether any wave is due this tick and returns
         # the newly created enemy objects.
         newly_spawned = spawn_manager.tick(roundtick, marx_char)
-        opponents.extend(newly_spawned)   # add fresh enemies to the active list
-        roundtick -= 1                    # advance the round clock
+        opponents.extend(newly_spawned)   # Add fresh enemies to the active list
+        roundtick -= 1                    # Advance the round clock
 
         # --- Step 2: Draw Background -----------------------------------------
         screen.fill((0, 0, 0))            # black fill prevents ghost frames
@@ -218,5 +242,5 @@ def mainloop(screen, settings_obj):
             elif endtick == 0:
                 running = False
                 return True, marx_char.health_points
-    #music stop
+    # Stop the background music when the round ends
     pygame.mixer.music.stop()

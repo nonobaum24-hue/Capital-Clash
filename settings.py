@@ -5,7 +5,7 @@ class settings:
         # Window settings
         self.width = 1250                   # window width in pixels
         self.height = 720                   # window height in pixels
-        self.__title = "Capital Crush"        # window title
+        self.__title = "Capital Clash"      # window title (corrected from "Capital Crush")
         
         # Game settings
         self.__fps = 60                       # frames per second
@@ -21,10 +21,10 @@ class settings:
         self.__player_attack_cooldown = 30    # frames between attacks
         self.__player_exception_radius = 150  # safe spawn distance around player
 
-        # Audio settings
-        self.master_volume = 50              # master volume (0.0 to 1.0)
-        self.music_volume = 50             # music volume (0.0 to 1.0)
-        self.sfx_volume = 50                 # sound effects volume (0.0 to 1.0)
+        # Audio settings (0–100 scale, converted to 0.0–1.0 for pygame)
+        self.master_volume = 50             # master volume (0–100)
+        self.music_volume = 50              # music volume (0–100)
+        self.sfx_volume = 50                # sound effects volume (0–100)
         
         # Display settings
         self.__skin = "default"               # character skin (e.g., "default", "red", "blue")

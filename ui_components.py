@@ -100,7 +100,7 @@ class Slider:
             self.dragging = False
 
 class StartButton:
-    """Start Game Button für das Hauptmenü"""
+    """Start Game Button for the main menu. Inherits from Button-like pattern"""
     def __init__(self, x, y, width, height, text="Start Game"):
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
@@ -124,7 +124,10 @@ class StartButton:
 
 
 class SettingsButton:
-    """Settings Button für das Hauptmenü"""
+    """
+    Settings Button for the main menu.
+    Opens the settings menu when clicked.
+    """
     def __init__(self, x, y, width, height, settings_obj, screen, text="Settings"):
         self.rect = pygame.Rect(x, y, width, height)
         self.text = text
