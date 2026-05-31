@@ -99,8 +99,8 @@ def boss_fight(screen, marxhealth, settings_obj):
                      screen_w=width, screen_h=height)
     marx_char.health_points = marxhealth
 
-    # Marx HP bar: centred at top, 200 px wide, 20 px tall
-    marx_bar  = health_bar(width//2 - 100, 20, 200, 20, marx_char)
+    # Marx HP bar: centred at bottom, 200 px wide, 20 px tall
+    marx_bar  = health_bar(width//2 - 100, height - 40, 200, 20, marx_char)
 
     # Attack circle around Marx (visual indicator + hit detection)
     marx_area = damage_area(marx_char)
